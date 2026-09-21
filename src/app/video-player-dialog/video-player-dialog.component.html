@@ -1,0 +1,47 @@
+<div class="video-player-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <h2 mat-dialog-title class="video-title" [title]="currentSong?.title">{{ currentSong?.title }}</h2>
+      <p class="video-channel" [title]="currentSong?.channel">{{ currentSong?.channel }}</p>
+    </div>
+    <div class="header-actions">
+      <!-- <button
+        mat-icon-button
+        type="button"
+        (click)="toggleShuffle()"
+        class="control-button"
+        [class.active]="shuffleEnabled"
+        aria-label="Toggle shuffle"
+        title="Shuffle"
+      >
+        <mat-icon>shuffle</mat-icon>
+      </button> -->
+      <button
+        mat-icon-button
+        type="button"
+        (click)="toggleLoop()"
+        class="control-button"
+        [class.active]="loopEnabled"
+        aria-label="Toggle loop"
+        title="Loop"
+      >
+        <mat-icon>repeat</mat-icon>
+      </button>
+      <button mat-icon-button (click)="closeDialog(null)" class="close-button" aria-label="Close video player" title="Close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Video Player Container -->
+  <div class="video-container">
+    <!-- YouTube Player will be inserted here by API -->
+    <div #youtubePlayerContainer class="youtube-player-embed" id="youtube-player-container"></div>
+    
+    <!-- Loading state -->
+    <div *ngIf="isLoadingVideo" class="loading-overlay">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+  </div>
+</div>

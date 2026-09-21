@@ -1,0 +1,5 @@
+node_modules
+.angular/
+dist/
+src/environments/environment.ts
+yarn.lock

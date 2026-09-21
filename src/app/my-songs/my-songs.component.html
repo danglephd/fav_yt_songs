@@ -1,0 +1,130 @@
+<div class="my-songs-container">
+  <!-- Header -->
+  <div class="header">
+    <h1>My Songs</h1>
+    <p class="subtitle">Songs I've listened to from YouTube</p>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-value">{{ getTotalCount() }}</div>
+      <div class="stat-label">Total Songs</div>
+    </div>
+  </div>
+
+  <!-- Search and Filter Section -->
+  <div class="filter-section">
+    <div class="filter-row-1">
+      <mat-form-field appearance="outline" class="no-padding">
+        <mat-label>Search songs...</mat-label>
+        <input matInput [(ngModel)]="searchQuery" (keyup)="searchSongs()" />
+        <button mat-icon-button matSuffix (click)="clearSearch()" *ngIf="searchQuery">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <div class="filter-buttons">
+        <button mat-stroked-button [class.active]="filterType === SongFilterType.ALL"
+          (click)="changeFilter(SongFilterType.ALL)">
+          Search ({{ filteredSongs.length }})
+        </button>
+      </div>
+      <button mat-fab color="primary" (click)="openAddYouTubeSongDialog()" class="add-song-button"
+        matTooltip="Add a new song from YouTube" matTooltipPosition="above">
+        <mat-icon>music_note</mat-icon>
+      </button>
+    </div>
+
+    <div class="filter-row-2" *ngIf="(selectedWords | keyvalue).length > 0">
+      <div class="selected-words-container">
+        <span class="word-filter-badge"
+              *ngFor="let item of selectedWords | keyvalue"
+              [class.include]="item.value === 'include'"
+              [class.exclude]="item.value === 'exclude'"
+              [class.require]="item.value === 'require'"
+              (click)="toggleWordFilterStatus(item.key)"
+              [matTooltip]="item.value === 'include' ? 'Include this word in search' : (item.value === 'exclude' ? 'Exclude this word from search' : 'Require this word in search')"
+              matTooltipPosition="above">
+          <span class="word-name">{{ item.key }}</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading songs...</p>
+  </div>
+
+  <!-- Songs Grid -->
+  <div class="songs-grid" *ngIf="!isLoading">
+    <div *ngIf="filteredSongs.length === 0" class="empty-state">
+      <mat-icon>music_note</mat-icon>
+      <p>No songs found</p>
+      <p class="hint">Start by adding your favorite songs from YouTube</p>
+    </div>
+
+    <mat-card *ngFor="let song of itemsToDisplay; trackBy: trackBySongId" class="song-card" style="padding: 0px;">
+      <button mat-icon-button class="delete-button" (click)="deleteSong(song.id)" color="warn" matTooltip="Delete"
+        matTooltipPosition="below">
+        <mat-icon>close</mat-icon>
+      </button>
+      <button *ngIf="isUnavailable(song)" mat-icon-button class="change-unavailable-button" (click)="changeUnavailableStatus(song)" color="primary" matTooltip="Song Unavailable"
+        matTooltipPosition="below">
+        <mat-icon>check</mat-icon>
+      </button>
+      <!-- Thumbnail - Clickable to open video player dialog or YouTube link if unavailable -->
+      <div class="video-player-wrapper" 
+           [class.unavailable]="isUnavailable(song)"
+           (click)="isUnavailable(song) ? openYouTubeInNewTab(song, $event) : openVideoPlayerDialog(song)"
+           role="button"
+           tabindex="0"
+           [attr.aria-label]="isUnavailable(song) ? 'Unavailable - Open on YouTube' : 'Play ' + song.title + ' by ' + song.channel"
+           [attr.data-song-id]="song.id">
+        <img [src]="song.largestThumbnail" [alt]="song.title"
+          class="thumbnail-image"
+          loading="lazy">
+        <!-- Play overlay button or Unavailable label -->
+        <div class="play-overlay" *ngIf="!isUnavailable(song)">
+          <mat-icon class="play-icon">play_circle_outline</mat-icon>
+        </div>
+        <div class="play-overlay unavailable-overlay" *ngIf="isUnavailable(song)">
+          <span class="unavailable-label">Unavailable</span>
+        </div>
+      </div>
+
+      <!-- Card Header -->
+      <mat-card-header>
+        <mat-card-title [title]="song.title" style="font-size: 15px;
+">{{ song.title }}</mat-card-title>
+        <mat-card-subtitle>
+          <span class="channel" [title]="song.channel">{{ song.channel }}</span>
+        </mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
+  </div>
+
+  <!-- Loading More Indicator - Trigger for IntersectionObserver -->
+  <div class="loading-more-indicator" #loadMoreTrigger 
+       *ngIf="displayedCount < filteredSongs.length && !isLoading">
+    <p>Scroll down to load more...</p>
+  </div>
+
+  <!-- Floating Action Buttons -->
+  <div class="floating-action-group">
+    <button *ngIf="showScrollToTopButton" class="add-song-button floating-action-button" mat-fab color="primary" (click)="openAddYouTubeSongDialog()"
+      matTooltip="Add a new song from YouTube" matTooltipPosition="left">
+      <mat-icon>music_note</mat-icon>
+    </button>
+    <button *ngIf="showScrollToTopButton" class="scroll-to-top-button floating-action-button" (click)="scrollToTop()" matTooltip="Back to top"
+      matTooltipPosition="left">
+      <mat-icon>arrow_upward</mat-icon>
+    </button>
+    <button class="settings-button floating-action-button" mat-fab color="accent" (click)="openSettingsDialog()"
+      matTooltip="Settings" matTooltipPosition="left">
+      <mat-icon>settings</mat-icon>
+    </button>
+  </div>
+</div>
