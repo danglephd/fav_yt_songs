@@ -4,3 +4,5 @@ dist/
 firebase/*.json
 src/environments/environment.ts
 yarn.lock
+.firebase/hosting.ZGlzdC9mYXZfeXRfc29uZ3M.cache
+.firebase/hosting.ZGlzdC9teS1zb25ncw.cache
