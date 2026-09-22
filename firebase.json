@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "site": "proja21-27a31",
+    "public": "dist/fav_yt_songs",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

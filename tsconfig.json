@@ -3,7 +3,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
+    "outDir": "./dist/fav_yt_songs/",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitOverride": true,
