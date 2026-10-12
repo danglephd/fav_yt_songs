@@ -600,12 +600,41 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
       : `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
   }
 
-  resumeSongFromProgress(song: Song, event: Event): void {
+  playSongFromThumbnail(song: Song, event: Event): void {
     event.stopPropagation();
     const positionSeconds = this.getSavedProgressSeconds(song);
     if (positionSeconds !== null) {
       this.openVideoPlayerDialog(song, positionSeconds);
+    } else {
+      this.openVideoPlayerDialog(song);
     }
+  }
+
+  playSongFromBeginning(song: Song, event: Event): void {
+    event.stopPropagation();
+    this.resetSongProgress(song, event);
+    this.openVideoPlayerDialog(song);
+  }
+
+  resetSongProgress(song: Song, event: Event): void {
+    event.stopPropagation();
+    try {
+      const saved = localStorage.getItem('playlistPlaybackProgress');
+      const parsed = saved ? JSON.parse(saved) as PlaylistProgressStore : null;
+      if (!parsed?.videos || typeof parsed.videos !== 'object') {
+        this.playlistProgress.delete(song.videoId);
+        return;
+      }
+
+      delete parsed.videos[song.videoId];
+      if (parsed.activeVideoId === song.videoId) {
+        parsed.activeVideoId = undefined;
+      }
+      localStorage.setItem('playlistPlaybackProgress', JSON.stringify(parsed));
+    } catch {
+      localStorage.removeItem('playlistPlaybackProgress');
+    }
+    this.playlistProgress.delete(song.videoId);
   }
 
   /**

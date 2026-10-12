@@ -66,7 +66,7 @@
       <p class="hint">Start by adding your favorite songs from YouTube</p>
     </div>
 
-    <mat-card *ngFor="let song of itemsToDisplay; trackBy: trackBySongId" class="song-card" style="padding: 0px;">
+    <mat-card *ngFor="let song of itemsToDisplay; trackBy: trackBySongId" class="song-card" style="padding: 0px; overflow: visible !important;">
       <button mat-icon-button class="delete-button" (click)="deleteSong(song.id)" color="warn" matTooltip="Delete"
         matTooltipPosition="below">
         <mat-icon>close</mat-icon>
@@ -88,18 +88,16 @@
           loading="lazy">
         <!-- Play overlay button or Unavailable label -->
         <div class="play-overlay" *ngIf="!isUnavailable(song)">
-          <button type="button" class="play-area-button" (click)="openVideoPlayerDialog(song)"
-            [attr.aria-label]="'Play ' + song.title + ' by ' + song.channel">
-          </button>
-          <div class="play-controls">
+          <button type="button" class="play-area-button" (click)="playSongFromThumbnail(song, $event)"
+            [attr.aria-label]="getSavedProgressSeconds(song) !== null ? 'Continue ' + song.title : 'Play ' + song.title + ' from beginning'">
             <mat-icon class="play-icon">play_circle_outline</mat-icon>
-            <button *ngIf="getSavedProgressSeconds(song) !== null" type="button" mat-icon-button
-              class="resume-song-button" (click)="resumeSongFromProgress(song, $event)"
-              [matTooltip]="'Continue from ' + formatProgressTime(getSavedProgressSeconds(song) || 0)"
-              [attr.aria-label]="'Continue ' + song.title + ' from saved position'">
-              <mat-icon>play_arrow</mat-icon>
-            </button>
-          </div>
+          </button>
+          <button *ngIf="getSavedProgressSeconds(song) !== null" type="button" mat-icon-button
+            class="reset-progress-button" (click)="playSongFromBeginning(song, $event)"
+            matTooltip="Reset saved progress"
+            [attr.aria-label]="'Reset saved progress for ' + song.title">
+            <mat-icon>replay</mat-icon>
+          </button>
         </div>
         <div class="play-overlay unavailable-overlay" *ngIf="isUnavailable(song)">
           <span class="unavailable-label">Unavailable</span>
