@@ -461,7 +461,7 @@ mat-card-header {
 /* Responsive - Tablet */
 @media (max-width: 768px) {
   .my-songs-container {
-    padding: 16px;
+    padding: 12px;
   }
 
   .header h1 {
@@ -470,30 +470,16 @@ mat-card-header {
 
   .stats-container {
     grid-template-columns: 1fr;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
   }
 
   .filter-row-1 {
-    gap: 12px;
-    flex-direction: column;
-  }
-
-  .filter-row-1 mat-form-field,
-  .filter-buttons {
-    width: 100%;
-  }
-
-  .filter-buttons {
-    justify-content: stretch;
-  }
-
-  .filter-buttons button {
-    flex: 1;
+    gap: 8px;
   }
 
   .songs-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 16px;
+    gap: 12px;
   }
 
   .floating-action-group {
@@ -511,38 +497,105 @@ mat-card-header {
 /* Responsive - Mobile */
 @media (max-width: 480px) {
   .my-songs-container {
-    padding: 12px;
+    padding: 8px;
+  }
+
+  .header {
+    margin-bottom: 10px;
   }
 
   .header h1 {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
   }
 
   .header .subtitle {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    margin-top: 2px;
+  }
+
+  .stats-container {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .stat-card {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 7px 12px;
+    border-radius: 8px;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .filter-section {
+    margin-bottom: 14px;
   }
 
   .filter-row-1 {
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    grid-template-areas:
+      "search search"
+      "filter add";
+    gap: 4px 8px;
+    margin-bottom: 0;
   }
 
   .filter-row-1 mat-form-field {
+    grid-area: search;
     width: 100%;
+    min-width: 0;
   }
 
   .filter-buttons {
-    width: 100%;
-    flex-direction: column;
+    grid-area: filter;
+    width: auto;
+    min-width: 0;
   }
 
   .filter-buttons button {
-    width: 100%;
+    width: auto;
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .filter-row-1 > .add-song-button {
+    grid-area: add;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    justify-self: end;
+  }
+
+  .filter-row-2 {
+    margin-top: 6px;
+  }
+
+  .selected-words-container {
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 3px;
+  }
+
+  .word-filter-badge {
+    flex: 0 0 auto;
+    padding: 4px 9px;
+    font-size: 0.75rem;
   }
 
   .songs-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
   }
 
   .song-card {
@@ -551,7 +604,8 @@ mat-card-header {
 
   .video-player-wrapper {
     border-radius: 8px;
-    margin-bottom: 12px;
+    padding-top: 56.25%;
+    margin-bottom: 6px;
   }
 
   .thumbnail-image {
@@ -576,27 +630,64 @@ mat-card-header {
     opacity: 0.8;
   }
 
-  .stat-card {
-    padding: 16px;
+  mat-card-header {
+    padding: 0 6px 8px;
   }
 
-  .stat-value {
-    font-size: 1.5rem;
+  mat-card-title {
+    display: -webkit-box;
+    overflow: hidden;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 12px !important;
+    line-height: 1.25;
   }
 
-  .stat-label {
-    font-size: 0.8rem;
+  mat-card-subtitle {
+    font-size: 10px;
+    line-height: 1.2;
+    margin-bottom: 0;
+  }
+
+  .delete-button,
+  .change-unavailable-button {
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+  }
+
+  .delete-button {
+    top: 4px;
+    right: 4px;
+  }
+
+  .change-unavailable-button {
+    top: 4px;
+    right: 40px;
+  }
+
+  .delete-button mat-icon,
+  .change-unavailable-button mat-icon {
+    font-size: 18px;
+    line-height: 18px;
   }
 
   .floating-action-group {
-    bottom: 12px;
-    right: 12px;
-    gap: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    right: 8px;
+    gap: 6px;
   }
 
   .floating-action-button {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 360px) {
+  .songs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
