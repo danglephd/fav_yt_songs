@@ -30,8 +30,8 @@
           Search ({{ filteredSongs.length }})
         </button>
       </div>
-      <button mat-fab color="primary" (click)="openAddYouTubeSongDialog()" class="add-song-button"
-        matTooltip="Add a new song from YouTube" matTooltipPosition="above">
+      <button *ngIf="!isMobileView" mat-fab color="primary" (click)="openAddYouTubeSongDialog()" class="add-song-button"
+        matTooltip="Add a new song from YouTube" matTooltipPosition="above" >
         <mat-icon>music_note</mat-icon>
       </button>
     </div>
@@ -114,13 +114,13 @@
 
   <!-- Floating Action Buttons -->
   <div class="floating-action-group">
-    <button *ngIf="showScrollToTopButton" class="add-song-button floating-action-button" mat-fab color="primary" (click)="openAddYouTubeSongDialog()"
-      matTooltip="Add a new song from YouTube" matTooltipPosition="left">
-      <mat-icon>music_note</mat-icon>
-    </button>
     <button *ngIf="showScrollToTopButton" class="scroll-to-top-button floating-action-button" (click)="scrollToTop()" matTooltip="Back to top"
       matTooltipPosition="left">
       <mat-icon>arrow_upward</mat-icon>
+    </button>
+    <button *ngIf="showScrollToTopButton || isMobileView" class="add-song-button floating-action-button" mat-fab color="primary" (click)="openAddYouTubeSongDialog()"
+      matTooltip="Add a new song from YouTube" matTooltipPosition="left">
+      <mat-icon>music_note</mat-icon>
     </button>
     <button class="settings-button floating-action-button" mat-fab color="accent" (click)="openSettingsDialog()"
       matTooltip="Settings" matTooltipPosition="left">
