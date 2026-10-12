@@ -120,8 +120,10 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
 
       this.ngZone.runOutsideAngular(() => {
         this.player = new window.YT.Player(this.playerContainer.nativeElement, {
-          height: '100%',
-          width: '100%',
+          // Nếu mobile thì set hw nhỏ, desktop thì set full size
+          height: window.innerWidth <= 768 ? '150' : '100%',
+          width: window.innerWidth <= 768 ? '200' : '100%',
+
           events: {
             onReady: () => this.onPlayerReady(),
             onStateChange: (event: any) => this.onPlayerStateChange(event),
