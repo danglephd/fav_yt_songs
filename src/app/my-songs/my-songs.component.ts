@@ -12,7 +12,7 @@ import { YoutubeTagService } from '../services/youtube-tag.service';
 @Component({
   selector: 'app-my-songs',
   templateUrl: './my-songs.component.html',
-  styleUrls: ['./my-songs.component.css']
+  styleUrls: ['./my-songs.component.css', './my-songs.component.dark.css']
 })
 export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
   songs: Song[] = [];

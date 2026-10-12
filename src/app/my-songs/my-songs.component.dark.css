@@ -1,0 +1,172 @@
+@media (prefers-color-scheme: dark) {
+  :host {
+    display: block;
+    min-height: 100%;
+    color-scheme: dark;
+    background: #121212;
+    color: #e6e6e6;
+  }
+
+  .my-songs-container {
+    color: #e6e6e6;
+  }
+
+  .header h1 {
+    color: #f5f5f5;
+  }
+
+  .header .subtitle,
+  .loading-state p {
+    color: #b0b0b0;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #303f50 0%, #273443 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  :host ::ng-deep .my-songs-container .filter-buttons .mat-stroked-button {
+    color: #dedede;
+    border-color: #666;
+  }
+
+  :host ::ng-deep .my-songs-container .filter-buttons .mat-stroked-button.active {
+    background-color: #607d8b;
+    color: #fff;
+  }
+
+  :host ::ng-deep .my-songs-container .filter-buttons .mat-stroked-button.active:hover {
+    background-color: #546e7a;
+  }
+
+  :host ::ng-deep .my-songs-container .filter-section .mat-form-field-label,
+  :host ::ng-deep .my-songs-container .filter-section .mat-input-element {
+    color: #dedede;
+  }
+
+  :host ::ng-deep .my-songs-container .filter-section .mat-form-field-appearance-outline .mat-form-field-outline,
+  :host ::ng-deep .my-songs-container .filter-section .mat-form-field-appearance-outline .mat-form-field-outline-thick {
+    color: #777;
+  }
+
+  :host ::ng-deep .my-songs-container .filter-section .mat-form-field.mat-focused .mat-form-field-label,
+  :host ::ng-deep .my-songs-container .filter-section .mat-form-field.mat-focused .mat-form-field-outline-thick {
+    color: #90a4ae;
+  }
+
+  :host ::ng-deep .my-songs-container .mat-ripple-element {
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+
+  :host ::ng-deep .my-songs-container .mat-icon-button {
+    color: #dedede;
+  }
+
+  :host ::ng-deep .my-songs-container .delete-button.mat-warn {
+    color: #ff8a80;
+  }
+
+  :host ::ng-deep .my-songs-container .change-unavailable-button.mat-primary {
+    color: #90caf9;
+  }
+
+  .word-filter-badge.include {
+    background-color: #193b2b;
+    color: #a5d6b5;
+    border-color: #39734f;
+  }
+
+  .word-filter-badge.exclude {
+    background-color: #49251f;
+    color: #ffb4a8;
+    border-color: #8c493c;
+  }
+
+  .word-filter-badge.require {
+    background-color: #493718;
+    color: #ffd180;
+    border-color: #8b6829;
+  }
+
+  :host ::ng-deep .my-songs-container .song-card.mat-card {
+    background: #1e1e1e;
+    color: #e6e6e6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  }
+
+  :host ::ng-deep .my-songs-container .song-card.mat-card:hover {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+  }
+
+  :host ::ng-deep .my-songs-container .song-card .mat-card-title {
+    color: #f0f0f0;
+  }
+
+  :host ::ng-deep .my-songs-container .song-card .mat-card-subtitle {
+    color: #b0b0b0;
+  }
+
+  .delete-button,
+  .change-unavailable-button {
+    background: rgba(38, 38, 38, 0.95);
+  }
+
+  .delete-button:hover,
+  .change-unavailable-button:hover {
+    background: #333;
+  }
+
+  :host ::ng-deep .my-songs-container .floating-action-button.mat-fab {
+    background-color: #546e7a;
+    color: #fff;
+  }
+
+  :host ::ng-deep .my-songs-container .floating-action-button.settings-button.mat-fab {
+    background-color: #bf5b00;
+  }
+
+  :host ::ng-deep .my-songs-container .mat-progress-spinner circle {
+    stroke: #90a4ae;
+  }
+
+  .video-player-wrapper {
+    background: #292929;
+  }
+
+  .empty-state {
+    color: #777;
+  }
+
+  .empty-state p.hint,
+  .loading-more-indicator {
+    color: #999;
+  }
+
+  .floating-action-button {
+    background-color: #546e7a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .floating-action-button:hover {
+    background-color: #455a64;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+  }
+
+  .floating-action-button.settings-button {
+    background-color: #bf5b00;
+  }
+
+  .floating-action-button.settings-button:hover {
+    background-color: #a64b00;
+  }
+
+  @media (max-width: 480px) {
+    .stat-value {
+      background: #546e7a;
+    }
+  }
+}
