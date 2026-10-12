@@ -496,56 +496,86 @@ mat-card-header {
 
 /* Responsive - Mobile */
 @media (max-width: 480px) {
+
+  .subtitle {
+      display: none;
+  }
+
+  .filter-row-1 > .add-song-button {
+    grid-area: add;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    justify-self: end;
+  }
+
   .my-songs-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title count"
+      "subtitle subtitle"
+      "filters filters"
+      "loading loading"
+      "songs songs"
+      "more more";
+    align-items: center;
     padding: 8px;
   }
 
+  .header,
+  .stats-container,
+  .stat-card {
+    display: contents;
+  }
+
   .header {
-    margin-bottom: 10px;
+    margin: 0;
   }
 
   .header h1 {
+    grid-area: title;
     font-size: 1.3rem;
+    line-height: 1.2;
+    text-align: left;
   }
 
   .header .subtitle {
+    grid-area: subtitle;
     font-size: 0.8rem;
-    margin-top: 2px;
-  }
-
-  .stats-container {
-    display: block;
-    margin-bottom: 10px;
-  }
-
-  .stat-card {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 7px 12px;
-    border-radius: 8px;
+    margin: 2px 0 8px;
   }
 
   .stat-value {
-    font-size: 1.1rem;
+    grid-area: count;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    font-size: 1rem;
+    line-height: 1;
     margin: 0;
   }
 
   .stat-label {
-    font-size: 0.7rem;
+    display: none;
   }
 
   .filter-section {
-    margin-bottom: 14px;
+    grid-area: filters;
+    min-width: 0;
+    margin: 0 0 10px;
   }
 
   .filter-row-1 {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 40px;
-    grid-template-areas:
-      "search search"
-      "filter add";
-    gap: 4px 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "search filter";
+    gap: 6px;
     margin-bottom: 0;
   }
 
@@ -567,14 +597,6 @@ mat-card-header {
     padding: 0 12px;
   }
 
-  .filter-row-1 > .add-song-button {
-    grid-area: add;
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    justify-self: end;
-  }
-
   .filter-row-2 {
     margin-top: 6px;
   }
@@ -593,6 +615,7 @@ mat-card-header {
   }
 
   .songs-grid {
+    grid-area: songs;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 16px;
@@ -682,6 +705,14 @@ mat-card-header {
   .floating-action-button {
     width: 40px;
     height: 40px;
+  }
+
+  .loading-state {
+    grid-area: loading;
+  }
+
+  .loading-more-indicator {
+    grid-area: more;
   }
 }
 
