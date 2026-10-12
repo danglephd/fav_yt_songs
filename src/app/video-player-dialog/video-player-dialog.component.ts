@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, OnInit, ViewChild, ElementRef, NgZone, AfterViewInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ViewChild, ElementRef, NgZone, AfterViewInit, HostListener } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Song } from '../shared/models/song.model';
 
@@ -7,6 +7,16 @@ export interface VideoPlayerDialogData {
   songList: Song[];
   currentIndex: number;
   autoPlayNext?: boolean;
+}
+
+interface PlaylistProgressEntry {
+  positionSeconds: number;
+  updatedAt: number;
+}
+
+interface PlaylistProgressStore {
+  activeVideoId?: string;
+  videos: { [videoId: string]: PlaylistProgressEntry };
 }
 
 declare global {
@@ -35,6 +45,15 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
   private readonly maxPlaylistSize: number = 30;
   private playTimeout: ReturnType<typeof setTimeout> | null = null;
   private navigationDirection: 'next' | 'previous' | null = null;
+  private readonly progressStorageKey = 'playlistPlaybackProgress';
+  private progressTimer: ReturnType<typeof setInterval> | null = null;
+  private activeVideoId: string | null = null;
+  private lastKnownPositionSeconds = 0;
+  private resumeTargetSong: Song | null = null;
+  private preparedPlaylist: string[] = [];
+  private preparedStartIndex = 0;
+  showResumeOptions = false;
+  savedProgressSeconds = 0;
 
   constructor(
     public dialogRef: MatDialogRef<VideoPlayerDialogComponent>,
@@ -54,6 +73,7 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     this.loopEnabled = loopSetting ? JSON.parse(loopSetting) : false;
     this.maxPlaylistSize = maxPlaylistSizeSetting ? parseInt(maxPlaylistSizeSetting, 10) : 30;
     this.currentSong = data.song;
+    this.findResumeTarget();
   }
 
   ngOnInit(): void { }
@@ -145,8 +165,95 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
-  private initPlaylist(): { videoIds: string[], startIndex: number } {
-    const startIndex = this.data.currentIndex;
+  private isPlaylistSong(song: Song | null | undefined): boolean {
+    if (!song) {
+      return false;
+    }
+
+    return (song.tags || []).some(tag => tag.trim().toLowerCase() === 'playlist')
+      || !!song.approvedTags?.['playlist']
+      || !!song.generatedTags?.['playlist'];
+  }
+
+  private readProgressStore(): PlaylistProgressStore {
+    try {
+      const saved = localStorage.getItem(this.progressStorageKey);
+      const parsed = saved ? JSON.parse(saved) : null;
+      if (!parsed || typeof parsed !== 'object' || !parsed.videos || typeof parsed.videos !== 'object') {
+        return { videos: {} };
+      }
+
+      const videos: { [videoId: string]: PlaylistProgressEntry } = {};
+      Object.entries(parsed.videos).forEach(([videoId, value]) => {
+        const entry = value as PlaylistProgressEntry;
+        if (videoId && Number.isFinite(entry?.positionSeconds) && entry.positionSeconds > 0
+          && Number.isFinite(entry.updatedAt)) {
+          videos[videoId] = { positionSeconds: entry.positionSeconds, updatedAt: entry.updatedAt };
+        }
+      });
+
+      return {
+        activeVideoId: typeof parsed.activeVideoId === 'string' ? parsed.activeVideoId : undefined,
+        videos
+      };
+    } catch {
+      return { videos: {} };
+    }
+  }
+
+  private getValidProgress(song: Song | null | undefined, entry?: PlaylistProgressEntry): PlaylistProgressEntry | null {
+    if (!this.isPlaylistSong(song) || !entry || !Number.isFinite(entry.positionSeconds) || entry.positionSeconds <= 0) {
+      return null;
+    }
+
+    if (song?.durationSeconds && entry.positionSeconds >= song.durationSeconds - 1) {
+      return null;
+    }
+
+    return entry;
+  }
+
+  private findResumeTarget(): void {
+    const store = this.readProgressStore();
+    const activeSong = store.activeVideoId
+      ? this.data.songList.find(song => song.videoId === store.activeVideoId && this.isPlaylistSong(song))
+      : undefined;
+    const activeProgress = activeSong
+      ? this.getValidProgress(activeSong, store.videos[activeSong.videoId])
+      : null;
+    const selectedProgress = this.getValidProgress(this.data.song, store.videos[this.data.song.videoId]);
+    const targetSong = activeProgress ? activeSong : selectedProgress ? this.data.song : null;
+    const targetProgress = activeProgress || selectedProgress;
+
+    if (targetSong && targetProgress) {
+      this.resumeTargetSong = targetSong;
+      this.savedProgressSeconds = targetProgress.positionSeconds;
+      this.showResumeOptions = true;
+    }
+  }
+
+  private writeProgressStore(store: PlaylistProgressStore): void {
+    try {
+      localStorage.setItem(this.progressStorageKey, JSON.stringify(store));
+    } catch (error) {
+      console.warn('Unable to save playlist playback progress:', error);
+    }
+  }
+
+  private removeProgress(videoId: string): void {
+    const store = this.readProgressStore();
+    if (!store.videos[videoId] && store.activeVideoId !== videoId) {
+      return;
+    }
+
+    delete store.videos[videoId];
+    if (store.activeVideoId === videoId) {
+      store.activeVideoId = undefined;
+    }
+    this.writeProgressStore(store);
+  }
+
+  private initPlaylist(startIndex: number = this.data.currentIndex): { videoIds: string[], startIndex: number } {
     const videoIds = this.data.songList
       .filter(song => !!song.videoId)
       .map(song => song.videoId);
@@ -188,19 +295,85 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
   private onPlayerReady(): void {
     //ghi log for debugging
     console.log('YouTube player is ready.');
-    this.startPlayTimeout();
-
     this.isLoadingVideo = false;
 
-    // Thêm function để load playlist với giới hạn số lượng video
-    const { videoIds: limitedVideoIds, startIndex } = this.initPlaylist();
+    const startSong = this.showResumeOptions && this.resumeTargetSong
+      ? this.resumeTargetSong
+      : this.data.song;
+    const sourceIndex = this.data.songList.findIndex(song => song.videoId === startSong.videoId);
+    const { videoIds: limitedVideoIds, startIndex } = this.initPlaylist(sourceIndex >= 0 ? sourceIndex : this.data.currentIndex);
+    this.preparedPlaylist = limitedVideoIds;
+    this.preparedStartIndex = startIndex;
+    this.currentSong = startSong;
 
-    this.player.loadPlaylist({
+    const playlistOptions = {
       playlist: limitedVideoIds,
       index: startIndex, // Adjust index to match the limited playlist
       startSeconds: 0
+    };
+
+    if (this.showResumeOptions) {
+      this.player.cuePlaylist(playlistOptions);
+      return;
+    }
+
+    this.startPlayTimeout();
+    this.player.loadPlaylist(playlistOptions);
+    this.applyPlaybackSettings();
+  }
+
+  playFromBeginning(): void {
+    if (!this.player || !this.isInitialized) {
+      return;
+    }
+
+    this.removeProgress(this.data.song.videoId);
+    if (this.resumeTargetSong) {
+      this.removeProgress(this.resumeTargetSong.videoId);
+    }
+    this.showResumeOptions = false;
+    this.currentSong = this.data.song;
+    const sourceIndex = this.data.songList.findIndex(song => song.videoId === this.data.song.videoId);
+    const playlist = this.initPlaylist(sourceIndex >= 0 ? sourceIndex : this.data.currentIndex);
+    this.preparedPlaylist = playlist.videoIds;
+    this.preparedStartIndex = playlist.startIndex;
+    this.startPlayTimeout();
+    this.player.loadPlaylist({
+      playlist: this.preparedPlaylist,
+      index: this.preparedStartIndex,
+      startSeconds: 0
     });
     this.applyPlaybackSettings();
+  }
+
+  resumePlayback(): void {
+    if (!this.player || !this.isInitialized || !this.resumeTargetSong) {
+      return;
+    }
+
+    const sourceIndex = this.data.songList.findIndex(song => song.videoId === this.resumeTargetSong?.videoId);
+    const playlist = this.initPlaylist(sourceIndex >= 0 ? sourceIndex : this.data.currentIndex);
+    this.preparedPlaylist = playlist.videoIds;
+    this.preparedStartIndex = playlist.startIndex;
+    this.currentSong = this.resumeTargetSong;
+    this.showResumeOptions = false;
+    this.startPlayTimeout();
+    this.player.loadPlaylist({
+      playlist: this.preparedPlaylist,
+      index: this.preparedStartIndex,
+      startSeconds: this.savedProgressSeconds
+    });
+    this.applyPlaybackSettings();
+  }
+
+  formatProgressTime(totalSeconds: number): string {
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    return hours > 0
+      ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+      : `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
   }
 
   private applyPlaybackSettings(): void {
@@ -238,18 +411,103 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     //ghi log for debugging
     // console.log('Player state changed:', event.data);
     this.ngZone.run(() => {
+      const videoId = this.player?.getVideoData?.()?.video_id;
+      this.detectVideoChange(videoId);
+
       if (event.data === window.YT.PlayerState.PLAYING) {
         this.clearPlayTimeout();
-        const videoData = this.player.getVideoData();
-        const videoId = videoData?.video_id;
         // console.log('Current video Data:', videoData);
         // console.log('Current video ID:', videoId);
 
         // Update currentSong based on the videoId for UI 
         this.currentSong = this.playingList.find(song => song.videoId === videoId) || null;
+        this.activeVideoId = videoId || null;
+        this.lastKnownPositionSeconds = this.getCurrentPosition();
         this.updateNavigation();
+        if (this.isPlaylistSong(this.currentSong)) {
+          this.startProgressTimer();
+        } else {
+          this.clearProgressTimer();
+        }
+      } else if (event.data === window.YT.PlayerState.PAUSED) {
+        this.clearProgressTimer();
+        this.saveActiveProgress();
+      } else if (event.data === window.YT.PlayerState.ENDED) {
+        this.clearProgressTimer();
+        if (this.activeVideoId && this.isPlaylistSong(this.currentSong)) {
+          this.removeProgress(this.activeVideoId);
+        }
+        this.activeVideoId = null;
+        this.lastKnownPositionSeconds = 0;
+      } else if (event.data !== window.YT.PlayerState.BUFFERING) {
+        this.clearProgressTimer();
       }
     });
+  }
+
+  private getCurrentPosition(): number {
+    try {
+      const position = Number(this.player?.getCurrentTime?.());
+      return Number.isFinite(position) && position >= 0 ? position : this.lastKnownPositionSeconds;
+    } catch {
+      return this.lastKnownPositionSeconds;
+    }
+  }
+
+  private detectVideoChange(videoId?: string): void {
+    if (!videoId || !this.activeVideoId || videoId === this.activeVideoId) {
+      return;
+    }
+
+    this.saveActiveProgress(true);
+    this.clearProgressTimer();
+    this.activeVideoId = null;
+    this.lastKnownPositionSeconds = 0;
+  }
+
+  private startProgressTimer(): void {
+    if (this.progressTimer !== null) {
+      return;
+    }
+
+    this.progressTimer = setInterval(() => {
+      if (this.player?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING) {
+        this.saveActiveProgress();
+      }
+    }, 15000);
+  }
+
+  private clearProgressTimer(): void {
+    if (this.progressTimer !== null) {
+      clearInterval(this.progressTimer);
+      this.progressTimer = null;
+    }
+  }
+
+  private saveActiveProgress(useLastKnownPosition: boolean = false): void {
+    if (!this.activeVideoId || !this.isPlaylistSong(this.currentSong)) {
+      return;
+    }
+
+    const currentPlayerVideoId = this.player?.getVideoData?.()?.video_id;
+    const position = !useLastKnownPosition && currentPlayerVideoId === this.activeVideoId
+      ? this.getCurrentPosition()
+      : this.lastKnownPositionSeconds;
+    const positionSeconds = Math.floor(position);
+    if (positionSeconds <= 0) {
+      return;
+    }
+
+    this.lastKnownPositionSeconds = position;
+    const store = this.readProgressStore();
+    const previous = store.videos[this.activeVideoId];
+    if (store.activeVideoId === this.activeVideoId && previous?.positionSeconds === positionSeconds) {
+      return;
+    }
+
+    store.activeVideoId = this.activeVideoId;
+    store.videos[this.activeVideoId] = { positionSeconds, updatedAt: Date.now() };
+    this.writeProgressStore(store);
   }
 
   private clearPlayTimeout(): void {
@@ -314,6 +572,14 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     this.updateNavigation();
 
     if ([100, 101, 150].includes(event.data)) {
+      if (currentSong?.videoId) {
+        this.removeProgress(currentSong.videoId);
+      }
+      if (this.activeVideoId === currentSong?.videoId) {
+        this.activeVideoId = null;
+        this.lastKnownPositionSeconds = 0;
+        this.clearProgressTimer();
+      }
       this.updateCurrentSongTags(currentSong);
       if (this.navigationDirection === 'next') {
         this.player.nextVideo();
@@ -339,13 +605,21 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
    * Close dialog manually
    */
   closeDialog(song: Song | null): void {
+    this.saveActiveProgress();
     this.dialogRef.close(song);
+  }
+
+  @HostListener('window:pagehide')
+  saveProgressBeforePageHide(): void {
+    this.saveActiveProgress();
   }
 
   /**
    * Cleanup on destroy
    */
   ngOnDestroy(): void {
+    this.saveActiveProgress();
+    this.clearProgressTimer();
     this.clearPlayTimeout();
 
     if (this.player && this.isInitialized) {

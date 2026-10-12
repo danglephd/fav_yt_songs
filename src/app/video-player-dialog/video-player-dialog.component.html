@@ -43,5 +43,17 @@
     <div *ngIf="isLoadingVideo" class="loading-overlay">
       <mat-spinner diameter="50"></mat-spinner>
     </div>
+
+    <div *ngIf="showResumeOptions" class="resume-overlay">
+      <p>Saved progress: {{ formatProgressTime(savedProgressSeconds) }}</p>
+      <div class="resume-actions">
+        <button mat-stroked-button type="button" (click)="playFromBeginning()">
+          Play from beginning
+        </button>
+        <button mat-flat-button color="primary" type="button" (click)="resumePlayback()">
+          Continue
+        </button>
+      </div>
+    </div>
   </div>
 </div>
