@@ -8,6 +8,7 @@ import { VideoPlayerDialogComponent } from '../video-player-dialog/video-player-
 import { SettingsDialogComponent } from '../settings-dialog/settings-dialog.component';
 import { TagSource, YouTubeVideoInfo } from '../models/youtube.model';
 import { YoutubeTagService } from '../services/youtube-tag.service';
+import { PlaylistProgressEntry, PlaylistProgressStore } from '../models/playlist-progress.model';
 
 @Component({
   selector: 'app-my-songs',
@@ -37,6 +38,7 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
   private isScrolling = false;
   private intersectionObserver: IntersectionObserver | null = null;
   private filterCache: Map<string, Song[]> = new Map();
+  private playlistProgress = new Map<string, PlaylistProgressEntry>();
   private lastSearchQuery = '';
 
   public SongFilterType = SongFilterType;
@@ -121,6 +123,7 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.songService.getActiveSongsFromCache().subscribe(
           (songs: Song[]) => {
             this.songs = songs || [];
+            this.refreshPlaylistProgress();
             this.filterCache.clear(); // Clear cache when loading new data
             this.applyFilter();
             this.isLoading = false;
@@ -135,6 +138,7 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.songService.getActiveSongs().subscribe(
           (songs: Song[]) => {
             this.songs = songs || [];
+            this.refreshPlaylistProgress();
             this.filterCache.clear(); // Clear cache when loading new data
             this.applyFilter();
             this.isLoading = false;
@@ -547,6 +551,63 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
     return song.id;
   }
 
+  private isPlaylistSong(song: Song): boolean {
+    return (song.tags || []).some(tag => tag.trim().toLowerCase() === 'playlist')
+      || !!song.approvedTags?.['playlist']
+      || !!song.generatedTags?.['playlist'];
+  }
+
+  private refreshPlaylistProgress(): void {
+    this.playlistProgress.clear();
+    try {
+      const saved = localStorage.getItem('playlistPlaybackProgress');
+      const parsed = saved ? JSON.parse(saved) as PlaylistProgressStore : null;
+      if (!parsed?.videos || typeof parsed.videos !== 'object') {
+        return;
+      }
+
+      Object.entries(parsed.videos).forEach(([videoId, entry]) => {
+        if (videoId && Number.isFinite(entry?.positionSeconds) && entry.positionSeconds > 0
+          && Number.isFinite(entry.updatedAt)) {
+          this.playlistProgress.set(videoId, entry);
+        }
+      });
+    } catch {
+      this.playlistProgress.clear();
+    }
+  }
+
+  getSavedProgressSeconds(song: Song): number | null {
+    if (!this.isPlaylistSong(song) || this.isUnavailable(song)) {
+      return null;
+    }
+
+    const progress = this.playlistProgress.get(song.videoId);
+    if (!progress || (song.durationSeconds && progress.positionSeconds >= song.durationSeconds - 1)) {
+      return null;
+    }
+
+    return progress.positionSeconds;
+  }
+
+  formatProgressTime(totalSeconds: number): string {
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    return hours > 0
+      ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+      : `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+  }
+
+  resumeSongFromProgress(song: Song, event: Event): void {
+    event.stopPropagation();
+    const positionSeconds = this.getSavedProgressSeconds(song);
+    if (positionSeconds !== null) {
+      this.openVideoPlayerDialog(song, positionSeconds);
+    }
+  }
+
   /**
    * Request notification permission from user
    * Handle all permission states: granted, denied, default
@@ -655,7 +716,7 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
    * Shows browser notification as fallback for inactive tabs
    * @param song - Song data to play
    */
-  async openVideoPlayerDialog(song: Song): Promise<void> {
+  async openVideoPlayerDialog(song: Song, resumePositionSeconds?: number): Promise<void> {
     if (!song.videoId) {
       this.showMessage('Video ID not available', 'error');
       return;
@@ -676,7 +737,8 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
         song: song,
         songList: this.filteredSongs,
         currentIndex: currentIndex >= 0 ? currentIndex : 0,
-        autoPlayNext: true
+        autoPlayNext: true,
+        resumePositionSeconds
       },
       width: '90vw',
       maxWidth: '1200px',
@@ -689,6 +751,7 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Handle dialog close and auto-open next song
     dialogRef.afterClosed().subscribe((unavailableSong: Song | null) => {
+      this.refreshPlaylistProgress();
       if (unavailableSong && unavailableSong.videoId) {
         // update tag: unavailable to song in database to prevent future attempts to play it
         unavailableSong.tags = unavailableSong.tags || [];

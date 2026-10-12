@@ -78,17 +78,28 @@
       <!-- Thumbnail - Clickable to open video player dialog or YouTube link if unavailable -->
       <div class="video-player-wrapper" 
            [class.unavailable]="isUnavailable(song)"
-           (click)="isUnavailable(song) ? openYouTubeInNewTab(song, $event) : openVideoPlayerDialog(song)"
-           role="button"
-           tabindex="0"
-           [attr.aria-label]="isUnavailable(song) ? 'Unavailable - Open on YouTube' : 'Play ' + song.title + ' by ' + song.channel"
+         (click)="isUnavailable(song) && openYouTubeInNewTab(song, $event)"
+         [attr.role]="isUnavailable(song) ? 'button' : null"
+         [attr.tabindex]="isUnavailable(song) ? 0 : null"
+         [attr.aria-label]="isUnavailable(song) ? 'Unavailable - Open on YouTube' : null"
            [attr.data-song-id]="song.id">
         <img [src]="song.largestThumbnail" [alt]="song.title"
           class="thumbnail-image"
           loading="lazy">
         <!-- Play overlay button or Unavailable label -->
         <div class="play-overlay" *ngIf="!isUnavailable(song)">
-          <mat-icon class="play-icon">play_circle_outline</mat-icon>
+          <button type="button" class="play-area-button" (click)="openVideoPlayerDialog(song)"
+            [attr.aria-label]="'Play ' + song.title + ' by ' + song.channel">
+          </button>
+          <div class="play-controls">
+            <mat-icon class="play-icon">play_circle_outline</mat-icon>
+            <button *ngIf="getSavedProgressSeconds(song) !== null" type="button" mat-icon-button
+              class="resume-song-button" (click)="resumeSongFromProgress(song, $event)"
+              [matTooltip]="'Continue from ' + formatProgressTime(getSavedProgressSeconds(song) || 0)"
+              [attr.aria-label]="'Continue ' + song.title + ' from saved position'">
+              <mat-icon>play_arrow</mat-icon>
+            </button>
+          </div>
         </div>
         <div class="play-overlay unavailable-overlay" *ngIf="isUnavailable(song)">
           <span class="unavailable-label">Unavailable</span>
