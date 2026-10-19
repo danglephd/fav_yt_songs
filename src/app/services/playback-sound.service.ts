@@ -1,6 +1,5 @@
 import { Injectable, OnDestroy } from '@angular/core';
-
-export type PlaybackSound = 'trackChange' | 'playlistEnd' | 'playlistLoop';
+import { PlaybackSound } from '../shared/models/playback-sound.types';
 
 @Injectable({ providedIn: 'root' })
 export class PlaybackSoundService implements OnDestroy {
@@ -27,9 +26,9 @@ export class PlaybackSoundService implements OnDestroy {
 
   private audioContext: AudioContext | null = null;
   private readonly patterns: Record<PlaybackSound, string> = {
-    trackChange: 'N',
-    playlistEnd: 'E',
-    playlistLoop: 'R'
+    [PlaybackSound.TrackChange]: 'E',
+    [PlaybackSound.PlaylistEnd]: 'M',
+    [PlaybackSound.PlaylistLoop]: 'I'
   };
 
   prepare(): void {

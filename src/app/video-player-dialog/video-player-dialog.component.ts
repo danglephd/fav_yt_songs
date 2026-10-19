@@ -2,6 +2,8 @@ import { Component, Inject, OnDestroy, OnInit, ViewChild, ElementRef, NgZone, Af
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Song } from '../shared/models/song.model';
 import { PlaylistProgressEntry, PlaylistProgressStore } from '../models/playlist-progress.model';
+import { PlaybackSoundService } from '../services/playback-sound.service';
+import { PlaybackSound } from '../shared/models/playback-sound.types';
 
 export interface VideoPlayerDialogData {
   song: Song;
@@ -45,12 +47,19 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
   private preparedPlaylist: string[] = [];
   private preparedStartIndex = 0;
 
+  private previousVideoId: string | null = null;
+  private previousPlaylistIndex = -1;
+  private playlistEndTimer: ReturnType<typeof setTimeout> | null = null;
+  private isDestroyed = false;
+
   constructor(
     public dialogRef: MatDialogRef<VideoPlayerDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: VideoPlayerDialogData,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private playbackSound: PlaybackSoundService
   ) {
     this.autoPlayNext = data.autoPlayNext !== false;
+    this.playbackSound.prepare();
     //load local storage settings
     const shuffleSetting = localStorage.getItem('shuffleEnabled');
     const loopSetting = localStorage.getItem('loopEnabled');
@@ -261,6 +270,8 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     const { videoIds: limitedVideoIds, startIndex } = this.initPlaylist(sourceIndex >= 0 ? sourceIndex : this.data.currentIndex);
     this.preparedPlaylist = limitedVideoIds;
     this.preparedStartIndex = startIndex;
+    this.previousVideoId = startSong.videoId;
+    this.previousPlaylistIndex = startIndex;
     this.currentSong = startSong;
 
     const playlistOptions = {
@@ -299,6 +310,9 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     this.loopEnabled = !this.loopEnabled;
     //save local storage
     localStorage.setItem('loopEnabled', JSON.stringify(this.loopEnabled));
+    if (this.loopEnabled) {
+      this.clearPlaylistEndTimer();
+    }    
     this.applyPlaybackSettings();
   }
 
@@ -310,9 +324,9 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     // console.log('Player state changed:', event.data);
     this.ngZone.run(() => {
       const videoId = this.player?.getVideoData?.()?.video_id;
-      this.detectVideoChange(videoId);
-
+      
       if (event.data === window.YT.PlayerState.PLAYING) {
+        this.detectVideoChange(videoId);
         const shouldResumeSavedProgress = this.pendingPlaylistTransition;
         this.pendingPlaylistTransition = false;
         this.clearPlayTimeout();
@@ -347,6 +361,7 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
         this.pendingPlaylistTransition = this.autoPlayNext;
         this.activeVideoId = null;
         this.lastKnownPositionSeconds = 0;
+        this.handlePlaylistEnded(videoId);
       } else if (event.data !== window.YT.PlayerState.BUFFERING) {
         this.clearProgressTimer();
       }
@@ -377,15 +392,56 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
   }
 
   private detectVideoChange(videoId?: string): void {
-    if (!videoId || !this.activeVideoId || videoId === this.activeVideoId) {
+    if (!videoId || videoId === this.previousVideoId) {
       return;
     }
 
-    this.saveActiveProgress(true);
+    const currentIndex = Number(this.player?.getPlaylistIndex?.());
+    const previousIndex = this.previousPlaylistIndex;
+    this.previousVideoId = videoId;
+    this.previousPlaylistIndex = Number.isFinite(currentIndex) ? currentIndex : previousIndex;
+
+    if (this.activeVideoId) {
+      this.saveActiveProgress(true);
+    }
     this.clearProgressTimer();
     this.pendingPlaylistTransition = true;
     this.activeVideoId = null;
     this.lastKnownPositionSeconds = 0;
+
+    const isPlaylistLoop = this.loopEnabled
+      && previousIndex === this.preparedPlaylist.length - 1
+      && currentIndex === 0;
+    this.playbackSound.play(isPlaylistLoop ? PlaybackSound.PlaylistLoop : PlaybackSound.TrackChange);
+  }
+
+  private handlePlaylistEnded(videoId?: string): void {
+    this.clearPlaylistEndTimer();
+    if (this.loopEnabled || this.player?.getPlaylistIndex?.() !== this.preparedPlaylist.length - 1) {
+      return;
+    }
+
+    const endedIndex = this.player.getPlaylistIndex();
+    const endedVideoId = videoId || this.player?.getVideoData?.()?.video_id;
+    this.playlistEndTimer = setTimeout(() => {
+      this.playlistEndTimer = null;
+      if (this.isDestroyed || !this.player || this.loopEnabled
+        || this.player.getPlayerState?.() !== window.YT?.PlayerState?.ENDED
+        || this.player.getPlaylistIndex?.() !== endedIndex
+        || this.player.getVideoData?.()?.video_id !== endedVideoId) {
+        return;
+      }
+
+      this.playbackSound.play(PlaybackSound.PlaylistEnd);
+      // this.closeDialog(this.data.song);
+    }, 500);
+  }
+  
+  private clearPlaylistEndTimer(): void {
+    if (this.playlistEndTimer !== null) {
+      clearTimeout(this.playlistEndTimer);
+      this.playlistEndTimer = null;
+    }  
   }
 
   private startProgressTimer(): void {
@@ -528,6 +584,7 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
    * Close dialog manually
    */
   closeDialog(song: Song | null): void {
+    this.clearPlaylistEndTimer();
     this.saveActiveProgress();
     this.dialogRef.close(song);
   }
@@ -541,9 +598,11 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
    * Cleanup on destroy
    */
   ngOnDestroy(): void {
+    this.isDestroyed = true;
     this.saveActiveProgress();
     this.clearProgressTimer();
     this.clearPlayTimeout();
+    this.clearPlaylistEndTimer();
 
     if (this.player && this.isInitialized) {
       try {
