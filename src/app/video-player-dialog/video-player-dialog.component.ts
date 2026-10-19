@@ -144,6 +144,7 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
             modestbranding: 1,
             rel: 0,
             fs: 1,
+            vq: window.innerWidth <= 768 ? 'tiny' : 'default'
           }
         });
         this.isInitialized = true;
