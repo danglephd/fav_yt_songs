@@ -785,6 +785,8 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
         // update tag: unavailable to song in database to prevent future attempts to play it
         unavailableSong.tags = unavailableSong.tags || [];
         if (!unavailableSong.tags.includes('unavailable')) {
+          //ghi log để debug
+          console.log(`Marking song as unavailable: ${unavailableSong.title} (${unavailableSong.videoId})`);
           unavailableSong.tags.push('unavailable');
         }
         const searchableText = unavailableSong.searchableText || '';

@@ -28,7 +28,8 @@ export class PlaybackSoundService implements OnDestroy {
   private readonly patterns: Record<PlaybackSound, string> = {
     [PlaybackSound.TrackChange]: 'E',
     [PlaybackSound.PlaylistEnd]: 'M',
-    [PlaybackSound.PlaylistLoop]: 'I'
+    [PlaybackSound.PlaylistLoop]: 'I',
+    [PlaybackSound.PlayError]: 'O'
   };
 
   prepare(): void {

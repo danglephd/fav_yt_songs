@@ -517,6 +517,8 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
       // update tag: unavailable to song in database to prevent future attempts to play it
       unavailableSong.tags = unavailableSong.tags || [];
       if (!unavailableSong.tags.includes('unavailable')) {
+        //ghi log for debugging
+        console.warn(`Marking video with ID ${unavailableSong.videoId}[${unavailableSong.title}] as unavailable.`);
         unavailableSong.tags.push('unavailable');
       }
       const searchableText = unavailableSong.searchableText || '';
@@ -551,6 +553,8 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     this.updateNavigation();
 
     if ([100, 101, 150].includes(event.data)) {
+      this.playbackSound.play(PlaybackSound.PlayError);
+
       if (currentSong?.videoId) {
         this.removeProgress(currentSong.videoId);
       }
@@ -559,6 +563,8 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
         this.lastKnownPositionSeconds = 0;
         this.clearProgressTimer();
       }
+      // ghi log for debugging
+      console.warn(`Error playing video with ${currentSong}. Moving to the next song.`, currentSong);
       this.updateCurrentSongTags(currentSong);
       if (this.navigationDirection === 'next') {
         this.player.nextVideo();
