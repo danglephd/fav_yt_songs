@@ -135,7 +135,8 @@
     </ng-template>
 
     <footer class="pagination" *ngIf="!isLoading">
-      <label class="rows-per-page">Rows per page
+      <label class="rows-per-page">
+        <span class="rows-label">Rows per page</span>
         <select [value]="pageSize" (change)="changePageSize($any($event.target).value)">
           <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
         </select>
