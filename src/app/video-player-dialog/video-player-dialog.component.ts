@@ -45,7 +45,6 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
   private lastKnownPositionSeconds = 0;
   private pendingPlaylistTransition = false;
   private preparedPlaylist: string[] = [];
-  private preparedStartIndex = 0;
 
   private previousVideoId: string | null = null;
   private previousPlaylistIndex = -1;
@@ -269,7 +268,6 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     const sourceIndex = this.data.songList.findIndex(song => song.videoId === startSong.videoId);
     const { videoIds: limitedVideoIds, startIndex } = this.initPlaylist(sourceIndex >= 0 ? sourceIndex : this.data.currentIndex);
     this.preparedPlaylist = limitedVideoIds;
-    this.preparedStartIndex = startIndex;
     this.previousVideoId = startSong.videoId;
     this.previousPlaylistIndex = startIndex;
     this.currentSong = startSong;
