@@ -1,0 +1,151 @@
+<div class="songs2-shell" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
+  <div class="panel-backdrop" *ngIf="mobilePanelOpen" (click)="mobilePanelOpen = false"></div>
+
+  <aside class="tags-panel" [class.mobile-open]="mobilePanelOpen">
+    <div class="panel-header">
+      <h2>Tags</h2>
+      <button mat-icon-button class="icon-button mobile-close" (click)="mobilePanelOpen = false" aria-label="Close tags">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="panel-content">
+      <label class="tag-search">
+        <mat-icon>search</mat-icon>
+        <input [(ngModel)]="tagSearchQuery" (ngModelChange)="filterTagList()" placeholder="Search tags..." />
+        <button *ngIf="tagSearchQuery" mat-icon-button (click)="tagSearchQuery = ''; filterTagList()" aria-label="Clear tag search">
+          <mat-icon>close</mat-icon>
+        </button>
+      </label>
+      <button class="all-tags-button" [class.active]="searchWords.length === 0" (click)="clearTagFilters(); mobilePanelOpen = false">
+        <span>All Songs</span><span class="tag-count">{{ songs.length }}</span>
+      </button>
+      <div class="tag-sort-controls" aria-label="Sort tags">
+        <button type="button" [class.active]="tagSortMode === 'countAsc'" (click)="setTagSortMode('countAsc')" matTooltip="Count ascending"># ↑</button>
+        <button type="button" [class.active]="tagSortMode === 'countDesc'" (click)="setTagSortMode('countDesc')" matTooltip="Count descending"># ↓</button>
+        <button type="button" [class.active]="tagSortMode === 'alphabetAsc'" (click)="setTagSortMode('alphabetAsc')" matTooltip="Alphabetical A to Z">A–Z</button>
+        <button type="button" [class.active]="tagSortMode === 'alphabetDesc'" (click)="setTagSortMode('alphabetDesc')" matTooltip="Alphabetical Z to A">Z–A</button>
+      </div>
+      <div class="tag-list" aria-label="Song tags">
+        <button *ngFor="let tag of filteredTagList" class="tag-list-item"
+          [class.active]="isTagSelected(tag.name)"
+          (click)="addTagFilter(tag.name); mobilePanelOpen = false">
+          <span class="tag-dot" [ngClass]="getTagColorClass(tag.name)"></span>
+          <span class="tag-list-name">{{ tag.name }}</span><span class="tag-count">{{ tag.count }}</span>
+        </button>
+        <p class="no-tags" *ngIf="filteredTagList.length === 0">No tags found</p>
+      </div>
+    </div>
+  </aside>
+
+  <main class="songs-main">
+    <header class="topbar">
+      <h1>My Songs</h1>
+      <div class="topbar-actions">
+        <button mat-flat-button color="primary" class="add-button" (click)="openAddSongDialog()">
+          <mat-icon>add</mat-icon><span class="desktop-add-label">Add Song</span><span class="mobile-add-label">Add</span>
+        </button>
+        <button mat-icon-button class="icon-button settings-button" (click)="openSettings()" aria-label="Settings" matTooltip="Settings">
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <label class="song-search">
+        <mat-icon>search</mat-icon>
+        <input [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Search songs..." />
+        <button *ngIf="searchQuery" mat-icon-button (click)="clearSearch()" aria-label="Clear search">
+          <mat-icon>close</mat-icon>
+        </button>
+      </label>
+      <div class="song-count"><strong>{{ filteredSongs.length }}</strong><span> songs</span></div>
+    </section>
+
+    <div class="search-words" *ngIf="searchWords.length" aria-label="Search word filters">
+      <span *ngFor="let item of searchWords" class="word-filter-badge"
+        [class.include]="item.state === 'include'" [class.require]="item.state === 'require'" [class.exclude]="item.state === 'exclude'"
+      >
+        <button type="button" class="word-filter-toggle" (click)="toggleSearchWord(item.word)"
+          [matTooltip]="getSearchWordTooltip(item.state)" matTooltipPosition="above">
+          {{ item.word }}
+        </button>
+        <button type="button" class="remove-search-word" (click)="removeSearchWord(item.word)"
+          [attr.aria-label]="'Remove ' + item.word + ' tag filter'" matTooltip="Remove tag filter">
+          <mat-icon>close</mat-icon>
+        </button>
+      </span>
+    </div>
+
+    <div class="mobile-song-count"><strong>{{ filteredSongs.length }}</strong> songs</div>
+
+    <section #tableRegion class="table-region" *ngIf="!isLoading && filteredSongs.length; else listState">
+      <div class="song-table" role="table" aria-label="Songs">
+        <div class="table-header" role="row">
+          <span class="title-column" role="columnheader">Title</span>
+          <span class="channel-column" role="columnheader">Channel</span>
+          <span class="tags-column" role="columnheader">Tags</span>
+          <span class="added-column" role="columnheader">Added</span>
+          <span class="actions-column" role="columnheader">Actions</span>
+        </div>
+        <div class="song-row" role="row" *ngFor="let song of pageSongs; trackBy: trackBySongId" (click)="onRowClick(song)" tabindex="0"
+          (keydown.enter)="onRowClick(song)" [class.unavailable]="isUnavailable(song)">
+          <div class="title-cell title-column" role="cell">
+            <img class="song-thumbnail" [src]="song.largestThumbnail" [alt]="''" loading="lazy" />
+            <div class="song-title-wrap">
+              <span class="song-title">{{ song.title }}</span>
+              <span class="mobile-channel">{{ song.channel }}</span>
+              <span class="mobile-tags" [attr.data-song-id]="song.id">
+                <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+                <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
+                <span class="tag-measurements" aria-hidden="true">
+                  <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+                  <span class="more-tags">+{{ getSongTags(song).length }}</span>
+                </span>
+              </span>
+              <span class="mobile-added">{{ formatAdded(song.createdAt) }}</span>
+            </div>
+          </div>
+          <span class="channel-cell channel-column" role="cell">{{ song.channel }}</span>
+          <span class="tags-cell tags-column" role="cell" [attr.data-song-id]="song.id">
+            <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+            <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
+            <span class="tag-measurements" aria-hidden="true">
+              <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+              <span class="more-tags">+{{ getSongTags(song).length }}</span>
+            </span>
+          </span>
+          <span class="added-cell added-column" role="cell">{{ formatAdded(song.createdAt) }}</span>
+          <span class="actions-cell actions-column" role="cell" (click)="$event.stopPropagation()">
+            <button mat-icon-button class="icon-button delete-button" (click)="deleteSong(song, $event)" aria-label="Delete song" matTooltip="Delete">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <ng-template #listState>
+      <section class="state-panel">
+        <mat-spinner *ngIf="isLoading" diameter="36"></mat-spinner>
+        <mat-icon *ngIf="!isLoading">music_note</mat-icon>
+        <p>{{ isLoading ? 'Loading songs...' : 'No songs found' }}</p>
+        <button *ngIf="!isLoading && searchQuery" mat-button (click)="clearSearch()">Clear filters</button>
+      </section>
+    </ng-template>
+
+    <footer class="pagination" *ngIf="!isLoading">
+      <label class="rows-per-page">Rows per page
+        <select [value]="pageSize" (change)="changePageSize($any($event.target).value)">
+          <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+        </select>
+      </label>
+      <span class="page-summary">{{ filteredSongs.length ? pageIndex * pageSize + 1 : 0 }}–{{ pageEnd }} of {{ filteredSongs.length }}</span>
+      <nav class="page-controls" aria-label="Pagination">
+        <button mat-icon-button class="icon-button" (click)="goToPage(pageIndex - 1)" aria-label="Previous page"><mat-icon>chevron_left</mat-icon></button>
+        <button *ngFor="let page of pageNumbers" class="page-number" [class.current]="page === pageIndex" (click)="goToPage(page)">{{ page + 1 }}</button>
+        <button mat-icon-button class="icon-button" (click)="goToPage(pageIndex + 1)" aria-label="Next page"><mat-icon>chevron_right</mat-icon></button>
+      </nav>
+    </footer>
+  </main>
+</div>
