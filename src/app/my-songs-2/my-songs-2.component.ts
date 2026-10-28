@@ -67,6 +67,11 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   private readonly DRAG_THRESHOLD = 10;
   private readonly OPEN_THRESHOLD = 0.35;
   private readonly TAGS_PANEL_WIDTH = 280;
+  private readonly TAGS_SWIPE_MIN_X = 24;
+  private readonly TAGS_SWIPE_MAX_X = 160;
+  private readonly TAGS_SWIPE_THRESHOLD = 55;
+  private readonly TAGS_DIRECTION_THRESHOLD = 12;
+  private tagsGestureDirection: 'pending' | 'horizontal' | 'vertical' = 'pending';
 
   constructor(
     private songService: SongRealtimedbService,
@@ -74,7 +79,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private zone: NgZone
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadSongs();
@@ -106,21 +111,22 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onTouchStart(event: TouchEvent): void {
-    if (!this.isMobile) return;
+    if (!this.isMobile || this.mobilePanelOpen) return;
 
     const touch = event.touches[0];
-    const canOpenFromEdge = !this.mobilePanelOpen && touch.clientX <= 32;
-    const canDragOpenPanel = this.mobilePanelOpen && touch.clientX <= this.TAGS_PANEL_WIDTH + 32;
+    if (!touch) return;
 
-    if (!canOpenFromEdge && !canDragOpenPanel) {
+    const x = touch.clientX;
+    if (x < this.TAGS_SWIPE_MIN_X || x > this.TAGS_SWIPE_MAX_X) {
       this.touchTracking = false;
       return;
     }
 
-    this.touchStartX = touch.clientX;
+    this.touchStartX = x;
     this.touchStartY = touch.clientY;
     this.touchTracking = true;
-    this.isDraggingTags = true;
+    this.tagsGestureDirection = 'pending';
+    this.isDraggingTags = false;
     this.tagsDragOffset = 0;
   }
 
@@ -128,37 +134,59 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     if (!this.touchTracking || !this.isMobile) return;
 
     const touch = event.touches[0];
+    if (!touch) return;
+
     const deltaX = touch.clientX - this.touchStartX;
     const deltaY = touch.clientY - this.touchStartY;
-    const isHorizontalDrag = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8;
 
-    if (!isHorizontalDrag) return;
+    if (this.tagsGestureDirection === 'pending') {
+      if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < this.TAGS_DIRECTION_THRESHOLD) return;
 
-    event.preventDefault();
-
-    if (!this.mobilePanelOpen) {
-      this.tagsDragOffset = Math.max(0, Math.min(this.TAGS_PANEL_WIDTH, deltaX));
-    } else {
-      this.tagsDragOffset = Math.min(0, Math.max(-this.TAGS_PANEL_WIDTH, deltaX));
+      if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        this.tagsGestureDirection = 'horizontal';
+        this.isDraggingTags = true;
+      } else {
+        this.tagsGestureDirection = 'vertical';
+        this.touchTracking = false;
+        return;
+      }
     }
+
+    if (this.tagsGestureDirection !== 'horizontal') return;
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    this.tagsDragOffset = Math.max(0, Math.min(this.TAGS_PANEL_WIDTH, deltaX));
   }
 
-  onTouchEnd(_event?: TouchEvent): void {
+  onTouchEnd(_event: TouchEvent): void {
     if (!this.touchTracking) return;
 
-    const shouldOpen = this.tagsDragOffset > this.TAGS_PANEL_WIDTH * this.OPEN_THRESHOLD
-      || (!this.mobilePanelOpen && this.tagsDragOffset > 0 && this.tagsDragOffset >= 24);
+    const shouldOpen =
+      this.tagsGestureDirection === 'horizontal' &&
+      this.tagsDragOffset >= this.TAGS_SWIPE_THRESHOLD;
 
-    this.mobilePanelOpen = this.mobilePanelOpen ? this.tagsDragOffset > -this.TAGS_PANEL_WIDTH * this.OPEN_THRESHOLD : shouldOpen;
+    if (shouldOpen) {
+      this.mobilePanelOpen = true;
+    }
+
     this.isDraggingTags = false;
     this.touchTracking = false;
     this.tagsDragOffset = 0;
+    this.tagsGestureDirection = 'pending';
   }
 
   onTouchCancel(): void {
+    this.resetTagsGesture();
+  }
+
+  private resetTagsGesture(): void {
     this.touchTracking = false;
     this.isDraggingTags = false;
     this.tagsDragOffset = 0;
+    this.tagsGestureDirection = 'pending';
   }
 
   loadSongs(): void {
