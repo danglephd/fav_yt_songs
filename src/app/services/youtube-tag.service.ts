@@ -334,6 +334,28 @@ export class YoutubeTagService {
         return tags.join(' ');
     }
 
+    private detectLanguageTags(title: string): string[] {
+        const tags: string[] = [];
+        const decomposedTitle = title.normalize('NFD');
+
+        if (/[ăâđêôơư]/i.test(title) || /[\u0300\u0301\u0303\u0309\u0323]/u.test(decomposedTitle)) {
+            tags.push('vietnam');
+        }
+
+        const hasJapaneseKana = /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(title);
+        if (hasJapaneseKana) {
+            tags.push('japan');
+        } else if (/\p{Script=Han}/u.test(title)) {
+            tags.push('china');
+        }
+
+        if (tags.length === 0 && /\p{Script=Latin}/u.test(title)) {
+            tags.push('en_us');
+        }
+
+        return tags;
+    }
+
     /**
      * =========================================================
      * MAIN FUNCTION - GENERATE VIDEO TAGS
@@ -393,6 +415,13 @@ export class YoutubeTagService {
             )
         ];
         console.log('[YoutubeTagService] After normalization:', normalizedTags.length, 'unique tags', normalizedTags);
+
+        const languageTags = this.detectLanguageTags(title);
+        languageTags.forEach(tag => {
+            if (!normalizedTags.includes(tag)) {
+                normalizedTags.push(tag);
+            }
+        });
 
         // thêm tag playlist nếu video dài hơn 10 phút (600 giây)
         if (durationSeconds && durationSeconds > 600) {
