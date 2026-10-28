@@ -137,6 +137,10 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (confirm('No cached songs found, do you want to load songs from the database?')) {
         this.songService.getActiveSongs().subscribe(
           (songs: Song[]) => {
+
+            songs.forEach(song => {
+              this.ensureTagsForSong(song);
+            });
             this.songs = songs || [];
             this.refreshPlaylistProgress();
             this.filterCache.clear(); // Clear cache when loading new data
@@ -719,24 +723,25 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
    * Generate tags if not already generated for a song 
    */
   async ensureTagsForSong(song: Song): Promise<void> {
-    if (!song.tags || song.tags.length === 0) {
-      let tagResult = await this.generateTagsForVideo({
-        title: song.title,
-        channel: song.channel,
-        description: song.description,
-        durationSeconds: song.durationSeconds
-      });
+    let tagResult = await this.generateTagsForVideo({
+      title: song.title,
+      channel: song.channel,
+      description: song.description,
+      durationSeconds: song.durationSeconds
+    });
 
-      // Update song with generated tags for future use
-      this.updateCachedSong(song.id, {
-        tags: Object.keys(tagResult.approvedTags),
-        approvedTags: tagResult.approvedTags,
-        generatedTags: tagResult.generatedTags,
-        searchableText: tagResult.searchableText
-      }).catch(() => {
-        // Silent fail - tagging is an enhancement, not critical
-      });
-    }
+    // Update song with generated tags for future use
+    this.updateCachedSong(song.id, {
+      tags: Object.keys(tagResult.approvedTags),
+      approvedTags: tagResult.approvedTags,
+      generatedTags: tagResult.generatedTags,
+      searchableText: tagResult.searchableText
+    }).catch(() => {
+      // Silent fail - tagging is an enhancement, not critical
+    });
+    // if (!song.tags || song.tags.length === 0) {
+    //  if (true) {
+    // }
   }
 
   /**
