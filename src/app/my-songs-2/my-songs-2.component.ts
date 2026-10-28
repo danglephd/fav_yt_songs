@@ -113,6 +113,11 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   onTouchStart(event: TouchEvent): void {
     if (!this.isMobile || this.mobilePanelOpen) return;
 
+    if (event.target instanceof Element && event.target.closest('.search-words')) {
+      this.resetTagsGesture();
+      return;
+    }
+
     const touch = event.touches[0];
     if (!touch) return;
 
