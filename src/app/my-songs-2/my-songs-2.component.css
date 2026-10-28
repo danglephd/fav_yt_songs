@@ -131,6 +131,8 @@
   color: var(--songs-muted);
 }
 
+.song-search button[aria-label="Clear search"] { align-self: baseline; }
+
 .all-tags-button,
 .tag-list-item {
   display: flex;

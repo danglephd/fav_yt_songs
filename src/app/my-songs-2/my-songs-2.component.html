@@ -20,7 +20,7 @@
         <mat-icon>search</mat-icon>
         <input [(ngModel)]="tagSearchQuery" (ngModelChange)="filterTagList()" placeholder="Search tags..." />
         <button *ngIf="tagSearchQuery" mat-icon-button (click)="tagSearchQuery = ''; filterTagList()"
-          aria-label="Clear tag search">
+          aria-label="Clear tag search" style="width: 40px !important; height: 40px !important;">
           <mat-icon>close</mat-icon>
         </button>
       </label>
@@ -78,10 +78,8 @@
       <div class="song-count"><strong>{{ filteredSongs.length }}</strong><span> songs</span></div>
     </section>
 
-    <div class="search-words" *ngIf="searchWords.length" 
-    aria-label="Search word filters"
-     (touchstart)="$event.stopPropagation()"
-     (touchmove)="$event.stopPropagation()">
+    <div class="search-words" *ngIf="searchWords.length" aria-label="Search word filters"
+      (touchstart)="$event.stopPropagation()" (touchmove)="$event.stopPropagation()">
       <span *ngFor="let item of searchWords" class="word-filter-badge" [class.include]="item.state === 'include'"
         [class.require]="item.state === 'require'" [class.exclude]="item.state === 'exclude'">
         <button type="button" class="word-filter-toggle" (click)="toggleSearchWord(item.word)"
@@ -127,8 +125,7 @@
                   </button>
                   <button *ngIf="getSavedProgressSeconds(song) !== null" type="button" mat-icon-button
                     class="reset-progress-button" (click)="playSongFromBeginning(song, $event)"
-                    (pointerdown)="$event.stopPropagation()"
-                    matTooltip="Reset saved progress"
+                    (pointerdown)="$event.stopPropagation()" matTooltip="Reset saved progress"
                     [attr.aria-label]="'Reset saved progress for ' + song.title">
                     <mat-icon>replay</mat-icon>
                   </button>
@@ -140,9 +137,9 @@
                 <span class="mobile-tags" [attr.data-song-id]="song.id">
                   <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{
                     tag }}</span>
-                  <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0"
-                    [matTooltip]="getHiddenTagsTooltip(song)" matTooltipClass="hidden-tags-tooltip"
-                    matTooltipPosition="above">+{{ getHiddenTagsCount(song) }}</span>
+                  <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0" [matTooltip]="getHiddenTagsTooltip(song)"
+                    matTooltipClass="hidden-tags-tooltip" matTooltipPosition="above">+{{ getHiddenTagsCount(song)
+                    }}</span>
                   <span class="tag-measurements" aria-hidden="true">
                     <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{
                       tag }}</span>
@@ -156,9 +153,8 @@
             <span class="tags-cell tags-column" role="cell" [attr.data-song-id]="song.id">
               <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag
                 }}</span>
-              <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0"
-                [matTooltip]="getHiddenTagsTooltip(song)" matTooltipClass="hidden-tags-tooltip"
-                matTooltipPosition="above">+{{ getHiddenTagsCount(song) }}</span>
+              <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0" [matTooltip]="getHiddenTagsTooltip(song)"
+                matTooltipClass="hidden-tags-tooltip" matTooltipPosition="above">+{{ getHiddenTagsCount(song) }}</span>
               <span class="tag-measurements" aria-hidden="true">
                 <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag
                   }}</span>
