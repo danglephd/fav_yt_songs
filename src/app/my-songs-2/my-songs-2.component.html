@@ -117,7 +117,23 @@
             (pointercancel)="onSongPointerCancel(song)" (click)="onSongRowClick(song)"
             (keydown.enter)="onSongRowClick(song)">
             <div class="title-cell title-column" role="cell">
-              <img class="song-thumbnail" [src]="song.largestThumbnail" [alt]="''" loading="lazy" />
+              <div class="song-thumbnail-wrap">
+                <img class="song-thumbnail" [src]="song.largestThumbnail" [alt]="song.title" loading="lazy" />
+                <div class="play-overlay" *ngIf="!isUnavailable(song)">
+                  <button type="button" class="play-area-button" (click)="playSongFromThumbnail(song, $event)"
+                    (pointerdown)="$event.stopPropagation()"
+                    [attr.aria-label]="getSavedProgressSeconds(song) !== null ? 'Continue ' + song.title : 'Play ' + song.title + ' from beginning'">
+                    <mat-icon class="play-icon">play_circle_outline</mat-icon>
+                  </button>
+                  <button *ngIf="getSavedProgressSeconds(song) !== null" type="button" mat-icon-button
+                    class="reset-progress-button" (click)="playSongFromBeginning(song, $event)"
+                    (pointerdown)="$event.stopPropagation()"
+                    matTooltip="Reset saved progress"
+                    [attr.aria-label]="'Reset saved progress for ' + song.title">
+                    <mat-icon>replay</mat-icon>
+                  </button>
+                </div>
+              </div>
               <div class="song-title-wrap">
                 <span class="song-title">{{ song.title }}</span>
                 <span class="mobile-channel">{{ song.channel }}</span>

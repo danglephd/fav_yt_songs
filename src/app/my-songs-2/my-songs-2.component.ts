@@ -510,8 +510,47 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.openSongPlayer(song, this.getSavedProgressSeconds(song) ?? undefined);
+  }
+
+  getSavedProgressSeconds(song: Song): number | null {
+    if (!this.isPlaylistSong(song) || this.isUnavailable(song)) return null;
+
     const progress = this.readProgress().videos?.[song.videoId]?.positionSeconds;
-    const resumePosition = this.isPlaylistSong(song) && Number.isFinite(progress) ? progress : undefined;
+    if (!Number.isFinite(progress) || progress <= 0
+      || (song.durationSeconds && progress >= song.durationSeconds - 1)) {
+      return null;
+    }
+
+    return progress;
+  }
+
+  playSongFromThumbnail(song: Song, event: Event): void {
+    event.stopPropagation();
+    if (this.isUnavailable(song)) return;
+    this.openSongPlayer(song, this.getSavedProgressSeconds(song) ?? undefined);
+  }
+
+  playSongFromBeginning(song: Song, event: Event): void {
+    event.stopPropagation();
+    this.resetSongProgress(song);
+    if (!this.isUnavailable(song)) this.openSongPlayer(song);
+  }
+
+  private resetSongProgress(song: Song): void {
+    try {
+      const progress = this.readProgress();
+      delete progress.videos[song.videoId];
+      if (progress.activeVideoId === song.videoId) {
+        delete progress.activeVideoId;
+      }
+      localStorage.setItem('playlistPlaybackProgress', JSON.stringify(progress));
+    } catch {
+      this.showMessage('Could not reset saved progress', 'error');
+    }
+  }
+
+  private openSongPlayer(song: Song, resumePositionSeconds?: number): void {
     const currentIndex = this.filteredSongs.findIndex(item => item.id === song.id);
     this.dialog.open(VideoPlayerDialogComponent, {
       data: {
@@ -519,7 +558,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
         songList: this.filteredSongs,
         currentIndex: Math.max(0, currentIndex),
         autoPlayNext: true,
-        resumePositionSeconds: resumePosition
+        resumePositionSeconds
       },
       width: '90vw',
       maxWidth: '1200px',
