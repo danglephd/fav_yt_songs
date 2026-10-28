@@ -32,7 +32,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   searchWords: SearchWordFilter[] = [];
   searchQuery = '';
   tagSearchQuery = '';
-  tagSortMode: TagSortMode = 'alphabetAsc';
+  tagSortMode: TagSortMode = 'countDesc';
   isLoading = true;
   mobilePanelOpen = false;
   isMobile = window.innerWidth < 600;
