@@ -140,7 +140,9 @@
                 <span class="mobile-tags" [attr.data-song-id]="song.id">
                   <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{
                     tag }}</span>
-                  <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
+                  <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0"
+                    [matTooltip]="getHiddenTagsTooltip(song)" matTooltipClass="hidden-tags-tooltip"
+                    matTooltipPosition="above">+{{ getHiddenTagsCount(song) }}</span>
                   <span class="tag-measurements" aria-hidden="true">
                     <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{
                       tag }}</span>
@@ -154,7 +156,9 @@
             <span class="tags-cell tags-column" role="cell" [attr.data-song-id]="song.id">
               <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag
                 }}</span>
-              <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
+              <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0"
+                [matTooltip]="getHiddenTagsTooltip(song)" matTooltipClass="hidden-tags-tooltip"
+                matTooltipPosition="above">+{{ getHiddenTagsCount(song) }}</span>
               <span class="tag-measurements" aria-hidden="true">
                 <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag
                   }}</span>

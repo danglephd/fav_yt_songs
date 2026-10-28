@@ -14,3 +14,8 @@ body {
 .video-player-dialog-panel .mat-dialog-container {
   padding: 0 !important;
 }
+
+.hidden-tags-tooltip {
+  max-width: 280px !important;
+  white-space: pre-line !important;
+}

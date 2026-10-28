@@ -396,6 +396,11 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     return Math.max(0, this.getDisplayTags(song).length - this.getVisibleTags(song).length);
   }
 
+  getHiddenTagsTooltip(song: Song): string {
+    const visibleCount = this.getVisibleTags(song).length;
+    return this.getDisplayTags(song).slice(visibleCount).join('\n');
+  }
+
   private scheduleTagLayout(): void {
     if (this.layoutFrame !== null) return;
     this.layoutFrame = requestAnimationFrame(() => {
