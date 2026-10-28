@@ -53,6 +53,21 @@
   font-weight: 600;
 }
 
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.header-title mat-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  color: var(--songs-muted);
+}
+
 .panel-content {
   display: flex;
   flex: 1;
@@ -231,15 +246,24 @@
 .mobile-added { display: none !important; }
 
 .toolbar {
+  display: flex;
+  align-items: center;
   flex: 0 0 70px;
   min-width: 0;
   gap: 12px;
 }
 
-.song-search { flex: 1; height: 42px; }
-.song-count { flex: 0 0 auto; color: var(--songs-muted); font-size: 13px; white-space: nowrap; }
+.song-search { flex: 1; min-width: 0; height: 42px; }
+.song-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: var(--songs-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
 .song-count strong { color: var(--songs-text); font-size: 15px; }
-.mobile-song-count { display: none; }
 
 .search-words { display: flex; flex: 0 0 auto; flex-wrap: nowrap; gap: 7px; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 0 0 8px; scrollbar-width: thin; touch-action: pan-x; }
 .word-filter-badge { display: inline-flex; flex: 0 0 auto; min-height: 28px; align-items: center; gap: 2px; padding: 2px 4px 2px 10px; border: 1px solid transparent; border-radius: 999px; font: inherit; font-size: 12px; white-space: nowrap; }
@@ -416,9 +440,11 @@
   .add-button { min-width: 66px !important; padding: 0 11px !important; }
   .add-button mat-icon { margin: 0 3px 0 0 !important; }
   .toolbar { flex: 0 0 58px; gap: 6px; }
-  .song-count { display: none; }
-  .mobile-song-count { display: block; flex: 0 0 24px; color: var(--songs-muted); font-size: 12px; }
-  .mobile-song-count strong { color: var(--songs-text); }
+  .song-count {
+    font-size: 12px;
+    color: var(--songs-muted);
+  }
+  .song-count strong { font-size: 14px; }
   .table-region { flex: 1; overflow-x: hidden; overflow-y: auto; border: 0; border-top: 1px solid var(--songs-border); border-radius: 0; }
   .song-table { min-width: 0; }
   .table-header { display: none; }

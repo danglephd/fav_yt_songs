@@ -9,7 +9,10 @@
     [class.dragging]="isDraggingTags"
     [style.--drag-offset]="tagsDragOffset + 'px'">
     <div class="panel-header">
-      <h2>Tags</h2>
+      <h2 class="header-title">
+        <mat-icon>local_offer</mat-icon>
+        <span>Tags</span>
+      </h2>
       <button mat-icon-button class="icon-button mobile-close" (click)="mobilePanelOpen = false" aria-label="Close tags">
         <mat-icon>close</mat-icon>
       </button>
@@ -46,7 +49,10 @@
 
   <main class="songs-main">
     <header class="topbar">
-      <h1>My Songs</h1>
+      <h1 class="header-title">
+        <mat-icon>library_music</mat-icon>
+        <span>My Songs</span>
+      </h1>
       <div class="topbar-actions">
         <button mat-flat-button color="primary" class="add-button" (click)="openAddSongDialog()">
           <mat-icon>add</mat-icon><span class="desktop-add-label">Add Song</span><span class="mobile-add-label">Add</span>
@@ -82,8 +88,6 @@
         </button>
       </span>
     </div>
-
-    <div class="mobile-song-count"><strong>{{ filteredSongs.length }}</strong> songs</div>
 
     <section #tableRegion class="table-region" *ngIf="!isLoading && filteredSongs.length; else listState">
       <div class="song-table" role="table" aria-label="Songs">
