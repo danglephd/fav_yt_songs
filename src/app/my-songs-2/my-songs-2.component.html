@@ -1,7 +1,13 @@
-<div class="songs2-shell" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
+<div class="songs2-shell"
+  (touchstart)="onTouchStart($event)"
+  (touchmove)="onTouchMove($event)"
+  (touchend)="onTouchEnd($event)"
+  (touchcancel)="onTouchCancel()">
   <div class="panel-backdrop" *ngIf="mobilePanelOpen" (click)="mobilePanelOpen = false"></div>
 
-  <aside class="tags-panel" [class.mobile-open]="mobilePanelOpen">
+  <aside class="tags-panel" [class.mobile-open]="mobilePanelOpen"
+    [class.dragging]="isDraggingTags"
+    [style.--drag-offset]="tagsDragOffset + 'px'">
     <div class="panel-header">
       <h2>Tags</h2>
       <button mat-icon-button class="icon-button mobile-close" (click)="mobilePanelOpen = false" aria-label="Close tags">
@@ -29,8 +35,8 @@
       <div class="tag-list" aria-label="Song tags">
         <button *ngFor="let tag of filteredTagList" class="tag-list-item"
           [class.active]="isTagSelected(tag.name)"
-          (click)="addTagFilter(tag.name); mobilePanelOpen = false">
-          <span class="tag-dot" [ngClass]="getTagColorClass(tag.name)"></span>
+          (click)="addTagFilter(tag.name)">
+          <span class="tag-dot" [ngClass]="getTagBackgroundColorClass(tag.name)"></span>
           <span class="tag-list-name">{{ tag.name }}</span><span class="tag-count">{{ tag.count }}</span>
         </button>
         <p class="no-tags" *ngIf="filteredTagList.length === 0">No tags found</p>
@@ -88,39 +94,53 @@
           <span class="added-column" role="columnheader">Added</span>
           <span class="actions-column" role="columnheader">Actions</span>
         </div>
-        <div class="song-row" role="row" *ngFor="let song of pageSongs; trackBy: trackBySongId" (click)="onRowClick(song)" tabindex="0"
-          (keydown.enter)="onRowClick(song)" [class.unavailable]="isUnavailable(song)">
-          <div class="title-cell title-column" role="cell">
-            <img class="song-thumbnail" [src]="song.largestThumbnail" [alt]="''" loading="lazy" />
-            <div class="song-title-wrap">
-              <span class="song-title">{{ song.title }}</span>
-              <span class="mobile-channel">{{ song.channel }}</span>
-              <span class="mobile-tags" [attr.data-song-id]="song.id">
-                <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
-                <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
-                <span class="tag-measurements" aria-hidden="true">
-                  <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
-                  <span class="more-tags">+{{ getSongTags(song).length }}</span>
-                </span>
-              </span>
-              <span class="mobile-added">{{ formatAdded(song.createdAt) }}</span>
-            </div>
-          </div>
-          <span class="channel-cell channel-column" role="cell">{{ song.channel }}</span>
-          <span class="tags-cell tags-column" role="cell" [attr.data-song-id]="song.id">
-            <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
-            <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
-            <span class="tag-measurements" aria-hidden="true">
-              <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
-              <span class="more-tags">+{{ getSongTags(song).length }}</span>
-            </span>
-          </span>
-          <span class="added-cell added-column" role="cell">{{ formatAdded(song.createdAt) }}</span>
-          <span class="actions-cell actions-column" role="cell" (click)="$event.stopPropagation()">
-            <button mat-icon-button class="icon-button delete-button" (click)="deleteSong(song, $event)" aria-label="Delete song" matTooltip="Delete">
+        <div class="song-swipe-container" *ngFor="let song of pageSongs; trackBy: trackBySongId">
+          <div class="swipe-actions" aria-label="Swipe actions">
+            <button mat-icon-button class="swipe-delete-button" type="button" disabled aria-label="Delete song" matTooltip="Delete">
               <mat-icon>delete_outline</mat-icon>
             </button>
-          </span>
+          </div>
+          <div class="song-row" role="row" tabindex="0"
+            [style.transform]="getSongRowTransform(song.id)"
+            [class.unavailable]="isUnavailable(song)"
+            (pointerdown)="onSongPointerDown($event, song)"
+            (pointermove)="onSongPointerMove($event, song)"
+            (pointerup)="onSongPointerUp($event, song)"
+            (pointercancel)="onSongPointerCancel(song)"
+            (click)="onSongRowClick(song)"
+            (keydown.enter)="onSongRowClick(song)">
+            <div class="title-cell title-column" role="cell">
+              <img class="song-thumbnail" [src]="song.largestThumbnail" [alt]="''" loading="lazy" />
+              <div class="song-title-wrap">
+                <span class="song-title">{{ song.title }}</span>
+                <span class="mobile-channel">{{ song.channel }}</span>
+                <span class="mobile-tags" [attr.data-song-id]="song.id">
+                  <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+                  <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
+                  <span class="tag-measurements" aria-hidden="true">
+                    <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+                    <span class="more-tags">+{{ getSongTags(song).length }}</span>
+                  </span>
+                </span>
+                <span class="mobile-added">{{ formatAdded(song.createdAt) }}</span>
+              </div>
+            </div>
+            <span class="channel-cell channel-column" role="cell">{{ song.channel }}</span>
+            <span class="tags-cell tags-column" role="cell" [attr.data-song-id]="song.id">
+              <span *ngFor="let tag of getVisibleTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+              <span class="more-tags" *ngIf="getHiddenTagsCount(song) > 0">+{{ getHiddenTagsCount(song) }}</span>
+              <span class="tag-measurements" aria-hidden="true">
+                <span *ngFor="let tag of getDisplayTags(song)" class="song-tag" [ngClass]="getTagColorClass(tag)">{{ tag }}</span>
+                <span class="more-tags">+{{ getSongTags(song).length }}</span>
+              </span>
+            </span>
+            <span class="added-cell added-column" role="cell">{{ formatAdded(song.createdAt) }}</span>
+            <span class="actions-cell actions-column" role="cell" (click)="$event.stopPropagation()">
+              <button mat-icon-button class="icon-button delete-button" (click)="deleteSong(song, $event)" aria-label="Delete song" matTooltip="Delete">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </span>
+          </div>
         </div>
       </div>
     </section>

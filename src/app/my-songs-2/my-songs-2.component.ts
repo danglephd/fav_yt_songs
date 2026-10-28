@@ -39,6 +39,19 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   pageIndex = 0;
   pageSize = 20;
   readonly pageSizeOptions = [10, 20, 50];
+  isDraggingTags = false;
+  tagsDragOffset = 0;
+  swipeOffsets = new Map<string, number>();
+  suppressClickForSongId: string | null = null;
+  readonly swipeWidth = 80;
+  activeSwipe: {
+    songId: string;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startOffset: number;
+    horizontal: boolean;
+  } | null = null;
 
   @ViewChild('tableRegion') private tableRegion?: ElementRef<HTMLElement>;
 
@@ -48,6 +61,12 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   private layoutFrame: number | null = null;
   private touchStartX = 0;
   private touchStartY = 0;
+  private touchTracking = false;
+  private readonly SWIPE_MIN_X = 60;
+  private readonly SWIPE_MAX_X = 140;
+  private readonly DRAG_THRESHOLD = 10;
+  private readonly OPEN_THRESHOLD = 0.35;
+  private readonly TAGS_PANEL_WIDTH = 280;
 
   constructor(
     private songService: SongRealtimedbService,
@@ -84,6 +103,62 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:keydown.escape')
   closePanelOnEscape(): void {
     this.mobilePanelOpen = false;
+  }
+
+  onTouchStart(event: TouchEvent): void {
+    if (!this.isMobile) return;
+
+    const touch = event.touches[0];
+    const canOpenFromEdge = !this.mobilePanelOpen && touch.clientX <= 32;
+    const canDragOpenPanel = this.mobilePanelOpen && touch.clientX <= this.TAGS_PANEL_WIDTH + 32;
+
+    if (!canOpenFromEdge && !canDragOpenPanel) {
+      this.touchTracking = false;
+      return;
+    }
+
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+    this.touchTracking = true;
+    this.isDraggingTags = true;
+    this.tagsDragOffset = 0;
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    if (!this.touchTracking || !this.isMobile) return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
+    const isHorizontalDrag = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8;
+
+    if (!isHorizontalDrag) return;
+
+    event.preventDefault();
+
+    if (!this.mobilePanelOpen) {
+      this.tagsDragOffset = Math.max(0, Math.min(this.TAGS_PANEL_WIDTH, deltaX));
+    } else {
+      this.tagsDragOffset = Math.min(0, Math.max(-this.TAGS_PANEL_WIDTH, deltaX));
+    }
+  }
+
+  onTouchEnd(_event?: TouchEvent): void {
+    if (!this.touchTracking) return;
+
+    const shouldOpen = this.tagsDragOffset > this.TAGS_PANEL_WIDTH * this.OPEN_THRESHOLD
+      || (!this.mobilePanelOpen && this.tagsDragOffset > 0 && this.tagsDragOffset >= 24);
+
+    this.mobilePanelOpen = this.mobilePanelOpen ? this.tagsDragOffset > -this.TAGS_PANEL_WIDTH * this.OPEN_THRESHOLD : shouldOpen;
+    this.isDraggingTags = false;
+    this.touchTracking = false;
+    this.tagsDragOffset = 0;
+  }
+
+  onTouchCancel(): void {
+    this.touchTracking = false;
+    this.isDraggingTags = false;
+    this.tagsDragOffset = 0;
   }
 
   loadSongs(): void {
@@ -262,6 +337,10 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     let hash = 0;
     for (let index = 0; index < tag.length; index++) hash = (hash * 31 + tag.charCodeAt(index)) | 0;
     return `tag-tone-${Math.abs(hash) % 12}`;
+  }
+
+  getTagBackgroundColorClass(tag: string): string {
+    return `${this.getTagColorClass(tag)}-bg`;
   }
 
   getDisplayTags(song: Song): string[] {
@@ -522,24 +601,83 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  onTouchStart(event: TouchEvent): void {
-    const touch = event.changedTouches[0];
-    this.touchStartX = touch.clientX;
-    this.touchStartY = touch.clientY;
+  getSongRowTransform(songId: string): string {
+    const offset = this.swipeOffsets.get(songId) ?? 0;
+    return `translate3d(${offset}px, 0, 0)`;
   }
 
-  onTouchEnd(event: TouchEvent): void {
-    if (!this.isMobile) return;
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - this.touchStartX;
-    const deltaY = touch.clientY - this.touchStartY;
-    if (Math.abs(deltaX) < 70 || Math.abs(deltaX) < Math.abs(deltaY) * 1.3) return;
+  onSongPointerDown(event: PointerEvent, song: Song): void {
+    if (!this.isMobile || (event.pointerType === 'mouse' && event.button !== 0)) return;
 
-    if (!this.mobilePanelOpen && this.touchStartX <= 24 && deltaX > 0) {
-      this.mobilePanelOpen = true;
-    } else if (this.mobilePanelOpen && deltaX < 0) {
-      this.mobilePanelOpen = false;
+    this.activeSwipe = {
+      songId: song.id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffset: this.swipeOffsets.get(song.id) ?? 0,
+      horizontal: false
+    };
+  }
+
+  onSongPointerMove(event: PointerEvent, song: Song): void {
+    if (!this.activeSwipe || this.activeSwipe.songId !== song.id || event.pointerId !== this.activeSwipe.pointerId) return;
+
+    const deltaX = event.clientX - this.activeSwipe.startX;
+    const deltaY = event.clientY - this.activeSwipe.startY;
+
+    if (!this.activeSwipe.horizontal) {
+      if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
+        this.activeSwipe = null;
+        return;
+      }
+      if (Math.abs(deltaX) < 8) return;
+      this.activeSwipe.horizontal = true;
+      event.preventDefault();
     }
+
+    if (this.activeSwipe.horizontal) {
+      event.preventDefault();
+      const offset = Math.max(-this.swipeWidth, Math.min(0, this.activeSwipe.startOffset + deltaX));
+      this.swipeOffsets.set(song.id, offset);
+    }
+  }
+
+  onSongPointerUp(event: PointerEvent, song: Song): void {
+    if (!this.activeSwipe || this.activeSwipe.songId !== song.id || event.pointerId !== this.activeSwipe.pointerId) return;
+
+    const deltaX = event.clientX - this.activeSwipe.startX;
+    const shouldDelete = deltaX < -this.swipeWidth;
+    const payload = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+    this.swipeOffsets.set(song.id, 0);
+    this.suppressClickForSongId = song.id;
+    this.activeSwipe = null;
+
+    if (shouldDelete) {
+      window.setTimeout(() => {
+        this.deleteSong(song, payload);
+      }, 0);
+    }
+
+    window.setTimeout(() => {
+      if (this.suppressClickForSongId === song.id) {
+        this.suppressClickForSongId = null;
+      }
+    }, 0);
+  }
+
+  onSongPointerCancel(song: Song): void {
+    this.swipeOffsets.set(song.id, 0);
+    this.activeSwipe = null;
+  }
+
+  onSongRowClick(song: Song): void {
+    if (this.suppressClickForSongId === song.id) {
+      this.suppressClickForSongId = null;
+      return;
+    }
+
+    this.onRowClick(song);
   }
 
   formatAdded(createdAt?: number): string {
