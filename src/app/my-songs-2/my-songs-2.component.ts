@@ -225,6 +225,66 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     this.buildTagCounts();
     this.applyFilters();
     this.isLoading = false;
+    void this.ensureTagsForSongs(this.songs);
+  }
+
+  private async ensureTagsForSongs(songs: Song[]): Promise<void> {
+    const updates = await Promise.all(songs.map(async song => {
+      if (song.generatedTags && song.approvedTags && typeof song.searchableText === 'string') {
+        return null;
+      }
+
+      try {
+        const result = await this.youtubeTagService.generateVideoTags({
+          title: song.title,
+          channel: song.channel,
+          description: song.description,
+          durationSeconds: song.durationSeconds
+        });
+        const generatedTags = { ...result.generatedTags, ...song.generatedTags };
+        const approvedTags = { ...result.approvedTags, ...song.approvedTags };
+        const tags = Array.from(new Set([
+          ...(song.tags || []),
+          ...Object.keys(approvedTags).filter(tag => approvedTags[tag])
+        ]));
+        const searchableText = Array.from(new Set([
+          ...Object.keys(generatedTags),
+          ...(song.tags || []).map(tag => this.normalizeTag(tag)).filter(Boolean)
+        ])).join(' ');
+
+        return {
+          id: song.id,
+          fields: { tags, generatedTags, approvedTags, searchableText }
+        };
+      } catch {
+        return null;
+      }
+    }));
+
+    const completedUpdates = updates.filter((update): update is NonNullable<typeof update> => update !== null);
+    if (!completedUpdates.length) return;
+
+    const updatesById = new Map(completedUpdates.map(update => [update.id, update.fields]));
+    this.songs = this.songs.map(song => {
+      const fields = updatesById.get(song.id);
+      return fields ? { ...song, ...fields } : song;
+    });
+    this.buildTagCounts();
+    this.applyFilters();
+
+    try {
+      const cachedSongs = JSON.parse(localStorage.getItem('cachedSongs') || '[]') as Song[];
+      const cachedById = new Map(cachedSongs.map(song => [song.id, song]));
+      completedUpdates.forEach(update => {
+        const cachedSong = cachedById.get(update.id);
+        if (cachedSong) {
+          cachedById.set(update.id, { ...cachedSong, ...update.fields });
+        }
+      });
+      localStorage.setItem('cachedSongs', JSON.stringify(Array.from(cachedById.values())));
+    } catch {
+      // Tag enrichment should not prevent the song list from working.
+    }
   }
 
   getSongTags(song: Song): string[] {
