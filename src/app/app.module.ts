@@ -17,8 +17,8 @@ import { MaterialModule } from './material/material.module';
 import { environment } from '../environments/environment';
 
 const routes: Routes = [
-  { path: '', component: MySongsComponent },
-  { path: 'my-songs-2', component: MySongs2Component },
+  { path: '', component: MySongs2Component },
+  { path: 'my-songs-2', component: MySongsComponent },
   { path: '**', redirectTo: '' }
 ];
 
