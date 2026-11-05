@@ -5,6 +5,7 @@ import { Song } from '../shared/models/song.model';
 import { YouTubeVideoInfo, TagSource } from '../models/youtube.model';
 import { SongRealtimedbService } from '../services/song.realtimedb.service';
 import { YoutubeTagService } from '../services/youtube-tag.service';
+import { TagService } from '../services/tag.service';
 import { AddYouTubeSongDialogComponent } from '../add-youtube-song-dialog/add-youtube-song-dialog.component';
 import { SettingsDialogComponent } from '../settings-dialog/settings-dialog.component';
 import { VideoPlayerDialogComponent } from '../video-player-dialog/video-player-dialog.component';
@@ -76,6 +77,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private songService: SongRealtimedbService,
     private youtubeTagService: YoutubeTagService,
+    private tagService: TagService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private zone: NgZone
@@ -230,35 +232,15 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
 
   private async ensureTagsForSongs(songs: Song[]): Promise<void> {
     const updates = await Promise.all(songs.map(async song => {
-      if (song.generatedTags && song.approvedTags && typeof song.searchableText === 'string') {
+      const fields = await this.tagService.ensureSongTags(song);
+      if (!fields) {
         return null;
       }
 
-      try {
-        const result = await this.youtubeTagService.generateVideoTags({
-          title: song.title,
-          channel: song.channel,
-          description: song.description,
-          durationSeconds: song.durationSeconds
-        });
-        const generatedTags = { ...result.generatedTags, ...song.generatedTags };
-        const approvedTags = { ...result.approvedTags, ...song.approvedTags };
-        const tags = Array.from(new Set([
-          ...(song.tags || []),
-          ...Object.keys(approvedTags).filter(tag => approvedTags[tag])
-        ]));
-        const searchableText = Array.from(new Set([
-          ...Object.keys(generatedTags),
-          ...(song.tags || []).map(tag => this.normalizeTag(tag)).filter(Boolean)
-        ])).join(' ');
-
-        return {
-          id: song.id,
-          fields: { tags, generatedTags, approvedTags, searchableText }
-        };
-      } catch {
-        return null;
-      }
+      return {
+        id: song.id,
+        fields
+      };
     }));
 
     const completedUpdates = updates.filter((update): update is NonNullable<typeof update> => update !== null);
@@ -288,23 +270,11 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getSongTags(song: Song): string[] {
-    const approved = Object.keys(song.approvedTags || {})
-      .filter(tag => song.approvedTags?.[tag]);
-    const source = approved.length ? approved : (song.tags || []);
-    const unique = new Map<string, string>();
-
-    source.forEach(tag => {
-      const normalized = this.normalizeTag(tag);
-      if (normalized && normalized !== 'unavailable') {
-        unique.set(normalized, tag.trim());
-      }
-    });
-
-    return Array.from(unique.keys());
+    return this.tagService.getSongTags(song);
   }
 
   private normalizeTag(tag: string): string {
-    return this.youtubeTagService.normalizeTag(tag || '');
+    return this.tagService.normalizeTag(tag);
   }
 
   private buildTagCounts(): void {

@@ -8,6 +8,7 @@ import { VideoPlayerDialogComponent } from '../video-player-dialog/video-player-
 import { SettingsDialogComponent } from '../settings-dialog/settings-dialog.component';
 import { TagSource, YouTubeVideoInfo } from '../models/youtube.model';
 import { YoutubeTagService } from '../services/youtube-tag.service';
+import { TagService } from '../services/tag.service';
 import { PlaylistProgressEntry, PlaylistProgressStore } from '../models/playlist-progress.model';
 
 @Component({
@@ -58,7 +59,8 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
     private songService: SongRealtimedbService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private youtubeTagService: YoutubeTagService
+    private youtubeTagService: YoutubeTagService,
+    private tagService: TagService
   ) { }
   
   private readCachedSongs(): Song[] {
@@ -723,25 +725,15 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
    * Generate tags if not already generated for a song 
    */
   async ensureTagsForSong(song: Song): Promise<void> {
-    let tagResult = await this.generateTagsForVideo({
-      title: song.title,
-      channel: song.channel,
-      description: song.description,
-      durationSeconds: song.durationSeconds
-    });
+    const tagFields = await this.tagService.ensureSongTags(song);
+    if (!tagFields) {
+      return;
+    }
 
     // Update song with generated tags for future use
-    this.updateCachedSong(song.id, {
-      tags: Object.keys(tagResult.approvedTags),
-      approvedTags: tagResult.approvedTags,
-      generatedTags: tagResult.generatedTags,
-      searchableText: tagResult.searchableText
-    }).catch(() => {
+    this.updateCachedSong(song.id, tagFields).catch(() => {
       // Silent fail - tagging is an enhancement, not critical
     });
-    // if (!song.tags || song.tags.length === 0) {
-    //  if (true) {
-    // }
   }
 
   /**
