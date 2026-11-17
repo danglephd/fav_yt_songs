@@ -37,6 +37,19 @@ export class TagService {
   }
 
   async ensureSongTags(song: Song): Promise<Partial<Song> | null> {
+    const hasCompleteTagData =
+      Array.isArray(song.tags) && song.tags.length > 0 &&
+      !!song.approvedTags && Object.keys(song.approvedTags).length > 0 &&
+      !!song.generatedTags && Object.keys(song.generatedTags).length > 0 &&
+      typeof song.searchableText === 'string' && song.searchableText.trim().length > 0;
+
+    if (hasCompleteTagData) {
+      // ghi log 
+      console.log(`Using cached tags for song: ${song.title} - https://www.youtube.com/watch?v=${song.videoId}`);
+
+      return null;
+    }
+
     try {
       const tagResult = await this.youtubeTagService.generateVideoTags({
         title: song.title,
