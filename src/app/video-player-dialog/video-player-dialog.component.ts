@@ -149,7 +149,6 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
           playerVars: {
             autoplay: 1,
             controls: 1,
-            modestbranding: 1,
             rel: 0,
             fs: 1,
             vq: window.innerWidth <= 768 ? 'tiny' : 'default'
@@ -247,12 +246,18 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
         limitedVideoIds.unshift(currentSongId);
       }
     } else {
-      // Nếu shuffleEnabled là false thì giữ nguyên thứ tự và điều chỉnh startIndex
-      adjustedStartIndex = limitedVideoIds.indexOf(currentSongId);
+      // Nếu shuffleEnabled là false thì giữ nguyên adjustedStartIndex = 0 và những song trước currentIndex sẽ bị đưa về  cuối danh sách, những song từ currentIndex về sau sẽ giữ nguyên thứ tự
+      if (currentIndex > 0) {
+        const beforeCurrent = limitedVideoIds.slice(0, currentIndex);
+        const afterCurrent = limitedVideoIds.slice(currentIndex);
+        limitedVideoIds.length = 0; // Clear the array
+        limitedVideoIds.push(...afterCurrent, ...beforeCurrent);
+      }
     }
-
-    //ghi log for debugging
+    // // ghi log for debugging, danh sách videoIds và adjustedStartIndex, currentSongId
+    // console.log('Adjusted start index for current song:', adjustedStartIndex);
     // console.log('Limited video IDs for playlist:', limitedVideoIds);
+    // console.log('Current song ID:', currentSongId);
     return { videoIds: limitedVideoIds, startIndex: adjustedStartIndex };
   }
 
@@ -544,13 +549,45 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
   }
 
   private onPlayerError(event: any): void {
-    console.log('YouTube player error:', event.data);
-    const currentIndex = this.player.getPlaylistIndex();
+    const errorCode = Number(event?.data ?? -1);
+    const currentIndex = this.player?.getPlaylistIndex?.() ?? -1;
     const currentSong = this.playingList[currentIndex] || null;
+    const errorDetails = {
+      code: errorCode,
+      message: this.getYouTubeErrorMessage(errorCode),
+      videoId: currentSong?.videoId || this.activeVideoId || null,
+      currentIndex,
+      songTitle: currentSong?.title || null,
+      playlistLength: this.preparedPlaylist.length,
+      isPlaylistSong: currentSong ? this.isPlaylistSong(currentSong) : false,
+      activeVideoId: this.activeVideoId,
+      navigationDirection: this.navigationDirection,
+      playerState: this.player?.getPlayerState?.(),
+      requestedVideoId: this.player?.getVideoData?.()?.video_id || this.data.song?.videoId || null,
+      playlist: this.preparedPlaylist.slice(0, 10),
+      parameter: {
+        autoplay: 1,
+        controls: 1,
+        modestbranding: 1,
+        rel: 0,
+        fs: 1,
+        vq: window.innerWidth <= 768 ? 'tiny' : 'default',
+        startSeconds: this.data.resumePositionSeconds || 0,
+        playlistLength: this.preparedPlaylist.length,
+        currentIndex
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    if ([2, 5].includes(errorCode)) {
+      console.warn('YouTube embed error detected:', errorDetails);
+    } else {
+      console.log('YouTube player error:', errorDetails);
+    }
 
     this.updateNavigation();
 
-    if ([100, 101, 150].includes(event.data)) {
+    if ([100, 101, 150].includes(errorCode)) {
       this.playbackSound.play(PlaybackSound.PlayError);
 
       if (currentSong?.videoId) {
@@ -572,16 +609,34 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  private getYouTubeErrorMessage(code: number): string {
+    switch (code) {
+      case 2:
+        return 'The request contains an invalid parameter or the player cannot play this video in the current context.';
+      case 5:
+        return 'The HTML5 player is not supported or failed to load the video; this often indicates a format or browser capability issue.';
+      case 100:
+        return 'The video requested was not found or has been removed.';
+      case 101:
+        return 'The embedding of this video is not allowed.';
+      case 150:
+        return 'The video is not embeddable.';
+      default:
+        return 'Unknown YouTube player error.';
+    }
+  }
+
   private startPlayTimeout(): void {
     this.clearPlayTimeout();
+    const timeoutDuration = 15000; 
 
     this.playTimeout = setTimeout(() => {
-      console.log('Video did not start playing within 10000ms. Moving to next song.');
+      console.log(`Video did not start playing within ${timeoutDuration}ms. Moving to next song.`);
       // close the dialog if the video doesn't start playing within 10 seconds
       this.closeDialog(this.data.song);
 
       this.playTimeout = null;
-    }, 10000);
+    }, timeoutDuration);
   }
 
   /**
