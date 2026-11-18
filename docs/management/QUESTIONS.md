@@ -22,12 +22,12 @@ Các câu hỏi dưới đây giữ lại những điểm ảnh hưởng đến 
 
 ## Q-003: Nguồn dữ liệu chuẩn và đồng bộ Firebase
 
-- **Câu hỏi:** Thêm/xóa bài trên giao diện hiện hành có cần ghi đồng bộ vào Firebase Realtime Database `/songs`, hay `localStorage` là nơi lưu trữ chủ đích?
-- **Lý do:** Route `/` nạp Firebase chỉ khi chưa có cache; luồng thêm/xóa hiện chỉ sửa `localStorage.cachedSongs`. Điều này khác phát biểu cũ trong `AI_SETUP_GUIDE.md` rằng màn hình đọc và ghi `/songs`.
+- **Câu hỏi:** Sau khi khởi tạo danh sách, ứng dụng có tiếp tục đồng bộ với Firebase hay hoạt động độc lập trên `localStorage`?
+- **Lý do:** Cần xác định liệu Firebase là nguồn dữ liệu runtime hay chỉ là nguồn snapshot khởi tạo.
 - **Mức độ:** Cao.
 - **Liên quan:** Persistence, data model, import, delete, deployment.
-- **Trạng thái:** Open.
-- **Trả lời / kết quả:** Chưa có xác nhận. Docs mô tả nơi đọc/ghi thực tế, không khẳng định local-only là yêu cầu sản phẩm.
+- **Trạng thái:** Resolved.
+- **Trả lời / kết quả:** Nếu `cachedSongs` có ít nhất một record hợp lệ, chỉ dùng local và không gọi Firebase. Nếu cache thiếu, rỗng hoặc không hợp lệ, hỏi người dùng; nếu đồng ý, lấy snapshot `/songs` một lần, ghi cache và unsubscribe. Thay đổi remote không cập nhật localStorage, thay đổi local không ghi ngược lên Firebase. Từ chối, lỗi, snapshot rỗng hoặc cache bị xóa/hỏng cho phép hỏi/nạp lại ở lần mở sau.
 
 ## Q-004: Giá trị mặc định của kích thước playlist
 

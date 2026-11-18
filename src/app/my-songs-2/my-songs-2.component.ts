@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Song } from '../shared/models/song.model';
 import { YouTubeVideoInfo, TagSource } from '../models/youtube.model';
 import { SongRealtimedbService } from '../services/song.realtimedb.service';
+import { SongSortingService } from '../services/song.sorting.service';
 import { YoutubeTagService } from '../services/youtube-tag.service';
 import { TagService } from '../services/tag.service';
 import { AddYouTubeSongDialogComponent } from '../add-youtube-song-dialog/add-youtube-song-dialog.component';
@@ -76,6 +77,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private songService: SongRealtimedbService,
+    private songSortingService: SongSortingService,
     private youtubeTagService: YoutubeTagService,
     private tagService: TagService,
     private dialog: MatDialog,
@@ -197,8 +199,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadSongs(): void {
-    const cachedSongs = localStorage.getItem('cachedSongs');
-    if (cachedSongs && cachedSongs !== '[]') {
+    if (this.songService.hasValidCachedSongs()) {
       this.songService.getActiveSongsFromCache().subscribe(songs => {
         this.setSongs(songs || []);
       }, () => {
@@ -214,7 +215,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.songService.getActiveSongs().subscribe(songs => {
-      this.setSongs(songs || []);
+      this.setSongs(songs || [], true);
       localStorage.setItem('cachedSongs', JSON.stringify(this.songs));
     }, () => {
       this.isLoading = false;
@@ -222,17 +223,19 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private setSongs(songs: Song[]): void {
+  private setSongs(songs: Song[], regenerateTags = false): void {
     this.songs = songs.filter(song => !song.deleted);
     this.buildTagCounts();
     this.applyFilters();
     this.isLoading = false;
-    void this.ensureTagsForSongs(this.songs);
+    if (regenerateTags) {
+      void this.ensureTagsForSongs(this.songs, true);
+    }
   }
 
-  private async ensureTagsForSongs(songs: Song[]): Promise<void> {
+  private async ensureTagsForSongs(songs: Song[], forceRegenerate = false): Promise<void> {
     const updates = await Promise.all(songs.map(async song => {
-      const fields = await this.tagService.ensureSongTags(song);
+      const fields = await this.tagService.ensureSongTags(song, forceRegenerate);
       if (!fields) {
         return null;
       }
@@ -335,13 +338,14 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
     const requires = this.searchWords.filter(item => item.state === 'require').map(item => item.word);
     const excludes = this.searchWords.filter(item => item.state === 'exclude').map(item => item.word);
 
-    this.filteredSongs = this.songs.filter(song => {
+    const filteredSongs = this.songs.filter(song => {
       const tags = this.getSongTags(song);
       if (excludes.some(word => tags.some(tag => tag.includes(word)))) return false;
       if (requires.length) return requires.every(word => tags.some(tag => tag.includes(word)));
       if (includes.length && !includes.some(word => tags.some(tag => tag.includes(word)))) return false;
       return true;
     });
+    this.filteredSongs = this.songSortingService.sortSongs(filteredSongs);
 
     this.resetToFirstPage();
   }
@@ -586,6 +590,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private openSongPlayer(song: Song, resumePositionSeconds?: number): void {
+    this.recordSongPlay(song);
     const currentIndex = this.filteredSongs.findIndex(item => item.id === song.id);
     this.dialog.open(VideoPlayerDialogComponent, {
       data: {
@@ -593,7 +598,8 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
         songList: this.filteredSongs,
         currentIndex: Math.max(0, currentIndex),
         autoPlayNext: true,
-        resumePositionSeconds
+        resumePositionSeconds,
+        onPlaybackStarted: (startedSong: Song) => this.recordSongPlay(startedSong)
       },
       width: '90vw',
       maxWidth: '1200px',
@@ -603,6 +609,25 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
       disableClose: true,
       backdropClass: 'video-player-backdrop'
     });
+  }
+
+  private recordSongPlay(song: Song): void {
+    const playCount = (song.playCount ?? 0) + 1;
+    this.songSortingService.updatePlayCount(song.id, playCount);
+    song.playCount = playCount;
+
+    try {
+      const cachedSongs = JSON.parse(localStorage.getItem('cachedSongs') || '[]') as Song[];
+      const songIndex = cachedSongs.findIndex(cachedSong => cachedSong.id === song.id);
+      if (songIndex >= 0) {
+        cachedSongs[songIndex] = { ...cachedSongs[songIndex], playCount };
+      } else {
+        cachedSongs.push({ ...song, playCount });
+      }
+      localStorage.setItem('cachedSongs', JSON.stringify(cachedSongs));
+    } catch {
+      this.showMessage('Could not save play count', 'error');
+    }
   }
 
   private readProgress(): PlaylistProgressStore {

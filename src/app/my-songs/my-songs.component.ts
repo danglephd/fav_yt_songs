@@ -120,8 +120,7 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
   loadSongs(): void {
     this.isLoading = true;
     // load song từ local storage, nếu không có thì hỏi để  load từ database 
-    const cachedSongs = localStorage.getItem('cachedSongs');
-    if (cachedSongs && cachedSongs !== '[]') {
+    if (this.songService.hasValidCachedSongs()) {
         this.songService.getActiveSongsFromCache().subscribe(
           (songs: Song[]) => {
             this.songs = songs || [];
@@ -141,7 +140,7 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
           (songs: Song[]) => {
 
             songs.forEach(song => {
-              this.ensureTagsForSong(song);
+              this.ensureTagsForSong(song, true);
             });
             this.songs = songs || [];
             this.refreshPlaylistProgress();
@@ -724,13 +723,13 @@ export class MySongsComponent implements OnInit, AfterViewInit, OnDestroy {
    * 
    * Generate tags if not already generated for a song 
    */
-  async ensureTagsForSong(song: Song): Promise<void> {
-    const tagFields = await this.tagService.ensureSongTags(song);
+  async ensureTagsForSong(song: Song, forceRegenerate = false): Promise<void> {
+    const tagFields = await this.tagService.ensureSongTags(song, forceRegenerate);
     if (!tagFields) {
       return;
     }
 
-    // Update song with generated tags for future use
+    Object.assign(song, tagFields);
     this.updateCachedSong(song.id, tagFields).catch(() => {
       // Silent fail - tagging is an enhancement, not critical
     });

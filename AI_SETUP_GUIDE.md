@@ -26,7 +26,7 @@ Firebase Realtime Database rules, quyền truy cập database, YouTube Data API 
 
 ## Hành vi dữ liệu cần lưu ý
 
-Ở màn hình `/`, danh sách được đọc từ `localStorage` khi đã có cache; nếu chưa có cache, người dùng được hỏi trước khi đọc `/songs` từ Firebase. Thêm bài và xóa bài trên màn hình hiện hành chỉ cập nhật cache local. Việc đồng bộ các thay đổi này trở lại Firebase chưa được xác nhận; xem [QUESTIONS.md](docs/management/QUESTIONS.md).
+Ở cả hai màn hình, nếu `localStorage.cachedSongs` có ít nhất một song record hợp lệ thì chỉ dùng local, không gọi Firebase. Nếu cache thiếu, rỗng hoặc không hợp lệ, ứng dụng hỏi người dùng; khi đồng ý, lấy đúng một snapshot từ `/songs` rồi unsubscribe. Thay đổi Firebase về sau không được nhận và thao tác local không ghi ngược lên Firebase. Nếu từ chối, tải lỗi, snapshot rỗng hoặc cache bị xóa/hỏng thì lần mở sau có thể hỏi và nạp lại.
 
 ## Nguyên tắc thay đổi
 

@@ -11,6 +11,7 @@ export interface VideoPlayerDialogData {
   currentIndex: number;
   autoPlayNext?: boolean;
   resumePositionSeconds?: number;
+  onPlaybackStarted?: (song: Song) => void;
 }
 
 declare global {
@@ -50,6 +51,7 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
   private previousPlaylistIndex = -1;
   private playlistEndTimer: ReturnType<typeof setTimeout> | null = null;
   private isDestroyed = false;
+  private playbackCounted = false;
 
   constructor(
     public dialogRef: MatDialogRef<VideoPlayerDialogComponent>,
@@ -338,6 +340,10 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
 
         // Update currentSong based on the videoId for UI 
         this.currentSong = this.playingList.find(song => song.videoId === videoId) || null;
+        if (this.currentSong && !this.playbackCounted) {
+          this.playbackCounted = true;
+          this.data.onPlaybackStarted?.(this.currentSong);
+        }
         this.activeVideoId = videoId || null;
         this.lastKnownPositionSeconds = this.getCurrentPosition();
         if (shouldResumeSavedProgress && this.currentSong) {
@@ -357,6 +363,7 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
         this.clearProgressTimer();
         this.saveActiveProgress();
       } else if (event.data === window.YT.PlayerState.ENDED) {
+        this.playbackCounted = false;
         this.clearProgressTimer();
         if (this.activeVideoId && this.isPlaylistSong(this.currentSong)) {
           this.removeProgress(this.activeVideoId);
@@ -399,6 +406,7 @@ export class VideoPlayerDialogComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
 
+    this.playbackCounted = false;
     const currentIndex = Number(this.player?.getPlaylistIndex?.());
     const previousIndex = this.previousPlaylistIndex;
     this.previousVideoId = videoId;

@@ -9,13 +9,22 @@ Nguồn chính: [my-songs-2.component.ts](../../src/app/my-songs-2/my-songs-2.co
 Hiển thị danh sách video đã lưu, cho phép tìm theo tags, lọc theo tag, mở player và xóa một mục khỏi thư viện local.
 
 ## Nạp danh sách
+1. Nếu `localStorage.cachedSongs` là JSON array có ít nhất một record hợp lệ (có `id`, `videoId`, `title` dạng chuỗi), màn hình chỉ đọc cache và bỏ các mục có `deleted: true`. Nhánh này không gọi Firebase.
+2. Nếu cache thiếu, rỗng, sai JSON/schema hoặc không có record hợp lệ, ứng dụng hỏi người dùng có muốn nạp dữ liệu từ Firebase Realtime Database hay không.
+3. Nếu đồng ý, `SongRealtimedbService.getActiveSongs()` lấy một snapshot duy nhất từ `/songs`, lọc mục chưa xóa, sắp xếp mới nhất trước và ghi kết quả vào cache. `take(1)` kết thúc subscription sau snapshot đầu tiên.
+4. Nếu từ chối, ứng dụng không đọc Firebase; lần mở sau có thể hỏi lại. Nếu lần đọc lỗi, ứng dụng báo lỗi và có thể thử lại ở lần mở sau.
 
-1. Nếu `localStorage.cachedSongs` có dữ liệu khác `[]`, màn hình đọc danh sách từ cache, bỏ các mục có `deleted: true` và sắp xếp theo `createdAt` giảm dần.
-2. Nếu chưa có cache, ứng dụng hỏi người dùng có muốn đọc danh sách từ Firebase Realtime Database hay không.
-3. Khi chấp nhận, `SongRealtimedbService.getActiveSongs()` đọc `/songs`, lọc mục chưa xóa, sắp xếp mới nhất trước và kết quả được lưu vào cache local.
-4. Nếu từ chối, màn hình dừng ở trạng thái không có danh sách. Lỗi đọc sẽ hiện thông báo lỗi.
+Sau khi snapshot có dữ liệu hợp lệ trong cache, các lần mở tiếp theo chỉ dùng localStorage. Thay đổi Firebase về sau không được nhận và cache không bị ghi đè. Add, delete, playCount và các cập nhật cache khác chỉ tồn tại local. Nếu snapshot rỗng hoặc cache bị xóa/hỏng/hết record hợp lệ, lần mở sau xem như không có dữ liệu local và có thể hỏi/nạp lại snapshot.
 
-Cache có dữ liệu được ưu tiên hơn Firebase; màn hình hiện hành không tự làm mới cache từ remote trong lần nạp đó.
+Khi snapshot được nạp từ Realtime Database, tag của từng bài được tạo lại một lần từ metadata hiện có (`title`, `channel`, `description`, `durationSeconds`), kể cả khi record nguồn đã có đầy đủ tag fields. Kết quả mới thay thế tag fields cũ và được cập nhật vào local cache sau khi xử lý xong. Cờ `unavailable` được giữ lại. Quy tắc regenerate này không áp dụng khi nạp cache hoặc khi add song.
+
+## Thứ tự bài hát
+
+Sau khi áp dụng tag filters, `SongSortingService` sắp xếp kết quả theo `playCount` tăng dần làm tiêu chí chính, rồi `createdAt` giảm dần làm tiêu chí phụ. Bài chưa có `playCount` được xem là null và đứng trước bài có count. Thứ tự này được áp dụng trước khi phân trang.
+
+`playCount` chỉ tăng khi YouTube player xác nhận video đã bắt đầu phát qua trạng thái `PLAYING`; chỉ mở player nhưng video không phát thì không tăng. Mỗi lượt playback chỉ được tính một lần, nên pause/resume không tăng lại; bài tiếp theo hoặc phát lại sau khi kết thúc có thể được tính thêm. Bài chưa có count bắt đầu từ 1. Count được ghi vào `localStorage.cachedSongs`; không đồng bộ lên Firebase.
+
+Sau khi cập nhật count, thứ tự danh sách không đổi ngay. Sắp xếp theo count mới được áp dụng ở lần kế tiếp danh sách được lọc/sắp xếp, chẳng hạn khi filter thay đổi hoặc dữ liệu được nạp lại.
 
 ## Tìm kiếm và lọc tags
 
@@ -52,4 +61,4 @@ Cache có dữ liệu được ưu tiên hơn Firebase; màn hình hiện hành 
 
 ## Xóa bài
 
-Xóa cần xác nhận. Màn hình ghi `deleted: true` vào mục trong `localStorage.cachedSongs`, sau đó loại bài khỏi danh sách đang hiển thị. Không có thao tác ghi Firebase trong luồng này. Việc đồng bộ xóa lên remote là câu hỏi mở [Q-003](../management/QUESTIONS.md).
+Xóa cần xác nhận. Màn hình ghi `deleted: true` vào mục trong `localStorage.cachedSongs`, sau đó loại bài khỏi danh sách đang hiển thị. Không có thao tác ghi Firebase trong luồng này; đây là hành vi local-only đã được xác nhận.

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database';
-import { Observable, map, of } from 'rxjs';
+import { Observable, map, of, take } from 'rxjs';
 import { Song } from '../shared/models/song.model';
 
 @Injectable({
@@ -20,6 +20,7 @@ export class SongRealtimedbService {
   getActiveSongs(): Observable<Song[]> {
     // trả về danh sách bài hát đã được lọc để chỉ bao gồm những bài hát chưa bị xóa (deleted: false) và sắp xếp theo thứ tự tạo mới nhất trước (createdAt: desc)
     return this.songsRef.snapshotChanges().pipe(
+      take(1),
       map(changes =>
         changes
           .map(c => ({
@@ -37,22 +38,36 @@ export class SongRealtimedbService {
    * Get all active songs (not deleted)
    */
   getActiveSongsFromCache(): Observable<Song[]> {
-    const cachedSongs = localStorage.getItem('cachedSongs');
+    const songs = this.readValidCachedSongs() || [];
+    return of(
+      songs
+        .filter(song => !song.deleted)
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+    );
+  }
 
-    if (!cachedSongs) {
-      return of([]);
-    }
+  hasValidCachedSongs(): boolean {
+    return this.readValidCachedSongs() !== null;
+  }
+
+  private readValidCachedSongs(): Song[] | null {
+    const serializedSongs = localStorage.getItem('cachedSongs');
+    if (!serializedSongs) return null;
 
     try {
-      const songs = JSON.parse(cachedSongs) as Song[];
+      const songs: unknown = JSON.parse(serializedSongs);
+      if (!Array.isArray(songs)) return null;
 
-      return of(
-        songs
-          .filter(song => !song.deleted)
-          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      const validSongs = songs.filter((song): song is Song =>
+        typeof song === 'object' && song !== null &&
+        typeof song.id === 'string' &&
+        typeof song.videoId === 'string' &&
+        typeof song.title === 'string'
       );
+
+      return validSongs.length ? validSongs : null;
     } catch {
-      return of([]);
+      return null;
     }
   }
 

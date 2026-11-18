@@ -25,6 +25,7 @@ export interface Song {
 
   // Statistics
   viewCount?: number;           // Total views
+  playCount?: number;           // Number of times this song has been played
 
   // Categorization
   tags?: string[];              // Custom tags for categorization (e.g., 'favorite', 'relaxing')
