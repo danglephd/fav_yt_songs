@@ -1,36 +1,36 @@
-# AI setup guide: standalone My Songs Angular app
+# AI Setup Guide
 
-## Goal
+## Phạm vi ứng dụng
 
-This folder is an isolated Angular 13 application for the `my-songs` feature only. Do not restore or copy unrelated features from the original workspace.
+Đây là ứng dụng Angular 13 có hai màn hình My Songs. Route `/` mở `MySongs2Component` (giao diện hiện hành); route `/my-songs-2` mở `MySongsComponent` (giao diện cũ). Các route được khai báo trong [app.module.ts](src/app/app.module.ts). Không xem project này là bản standalone chỉ chứa `my-songs`.
 
-## Build and run
+Tài liệu sản phẩm và các điểm chưa được xác nhận nằm trong [docs/README.md](docs/README.md).
 
-1. Use Node.js compatible with Angular CLI 13.
-2. Run `npm install` (or `yarn install`) in this folder.
-3. Set Firebase Realtime Database and YouTube API values in `src/environments/environment.ts` for local development.
-4. Run `npm start` and open the URL printed by Angular CLI.
-5. Validate with `npm run build1` before reporting completion.
+## Cài đặt và chạy
 
-## Source boundaries
+1. Dùng Node.js tương thích với Angular CLI 13 và cài dependencies bằng `npm install` hoặc `yarn install`.
+2. Cấu hình Firebase và YouTube API trong `src/environments/environment.ts` cho môi trường local. Không commit hoặc in API keys.
+3. Chạy `npm start`; Angular CLI sẽ hiển thị địa chỉ development server.
+4. Lệnh production build có sẵn là `npm run build1` (tương đương `ng build --configuration production`). Chỉ chạy khi cần xác minh build hoặc theo yêu cầu trong [AGENTS.md](AGENTS.md).
 
-- Screen: `src/app/my-songs`
-- Dialogs: `src/app/add-youtube-song-dialog`, `src/app/video-player-dialog`, `src/app/settings-dialog`
-- Services: `src/app/services/song.realtimedb.service.ts`, `youtube.service.ts`, `youtube-tag.service.ts`
-- Models: `src/app/models/youtube.model.ts`, `src/app/shared/models/song.model.ts`, `tag.model.ts`
-- Angular Material imports: `src/app/material/material.module.ts`
-- Firebase and YouTube configuration: `src/environments`
+Firebase Realtime Database rules, quyền truy cập database, YouTube Data API key và quota là điều kiện ngoài source code. Build thành công không xác minh các điều kiện này.
 
-`src/app/app.module.ts` is intentionally limited to these declarations. `AppComponent` renders `MySongsComponent` directly; there are no routes or other application features.
+## Ranh giới source
 
-## Environment handling
+- Màn hình: `src/app/my-songs-2` và `src/app/my-songs`.
+- Dialogs: `src/app/add-youtube-song-dialog`, `src/app/video-player-dialog`, `src/app/settings-dialog`.
+- Services: `src/app/services`.
+- Models: `src/app/models` và `src/app/shared/models`.
+- Angular routes, declarations và providers: `src/app/app.module.ts`.
+- Firebase/YouTube config: `src/environments`.
 
-Never hard-code or print API keys in source control. Use local values in `environment.ts` and deployment substitution for the `${...}` placeholders in `environment.prod.ts`. Required Firebase fields are `apiKey`, `authDomain`, `databaseURL`, `projectId`, `storageBucket`, `messagingSenderId`, and `appId`; YouTube requires `youtube.apiKey`.
+## Hành vi dữ liệu cần lưu ý
 
-## Functional dependencies
+Ở màn hình `/`, danh sách được đọc từ `localStorage` khi đã có cache; nếu chưa có cache, người dùng được hỏi trước khi đọc `/songs` từ Firebase. Thêm bài và xóa bài trên màn hình hiện hành chỉ cập nhật cache local. Việc đồng bộ các thay đổi này trở lại Firebase chưa được xác nhận; xem [QUESTIONS.md](docs/management/QUESTIONS.md).
 
-The screen reads and writes songs under Firebase Realtime Database path `/songs` and master tags under `/master_tags`. YouTube add/import actions call the YouTube Data API v3. Firebase rules and API quota are external prerequisites; a successful Angular build does not verify those credentials.
+## Nguyên tắc thay đổi
 
-## AI change rules
-
-Keep changes inside this folder. Preserve the standalone boundary, the Angular 13 dependency versions in `package.json`, and the existing dialog/service contracts. When changing a template or service, run the narrowest available Angular build, then run `npm run build1`.
+- Giữ Angular 13 và contracts hiện có giữa components, dialogs, services và models.
+- Kiểm tra tài liệu trong `docs/` và các câu hỏi liên quan trước khi thay đổi business behavior.
+- Không sửa các tài liệu lịch sử/đặc tả cũ như thể chúng phản ánh implementation hiện tại nếu chưa đối chiếu source.
+- Với thay đổi nhỏ trong template, CSS hoặc TypeScript, dựa vào Angular development server đang chạy theo [AGENTS.md](AGENTS.md); không tự khởi động server thứ hai hoặc chạy production build sau mỗi lần sửa.
