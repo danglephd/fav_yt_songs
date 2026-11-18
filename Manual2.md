@@ -3,7 +3,7 @@ FINAL SPECIFICATION · VERSION 3.0
 # My Songs – Responsive UI Design
 
 Giữ nguyên my-songs
-Viết trang my-songs-2, mở ở: http://localhost:4200/my-songs-2
+Viết trang my-songs-2, mở ở: http://localhost:4200/
 Đặc tả giao diện Desktop & Mobile, Light Mode & Dark Mode
 
 ## 1. Mục tiêu thiết kế
@@ -86,7 +86,7 @@ Mỗi từ được phân tách bằng khoảng trắng là một điều kiện
 | ----------------- | ------------------------------ |
 | Phạm vi           | Chỉ tên Tags                   |
 | Phân tách         | Theo khoảng trắng              |
-| Kết hợp nhiều từ  | OR                             |
+| Kết hợp từ ở trạng thái Include | OR; xem precedence Include/Require/Exclude tại mục 9 |
 | So khớp           | Contains                       |
 | Chữ hoa/thường    | Không phân biệt                |
 | Tag không tồn tại | Vẫn được tìm kiếm bình thường  |
@@ -135,7 +135,7 @@ rock
 | Trạng thái | Màu     | Ý nghĩa                           |
 | ---------- | ------- | --------------------------------- |
 | Include    | Xanh lá | Chứa ít nhất một tag Include      |
-| Require    | Cam     | Bắt buộc chứa tất cả tag Require  |
+| Require    | Cam     | Khi có Require, phải chứa tất cả tag Require; Include bị bỏ qua |
 | Exclude    | Đỏ      | Không chứa bất kỳ tag Exclude nào |
 
 Nhấn vào chip chuyển trạng thái theo chu kỳ:
@@ -220,42 +220,36 @@ Song Count hiển thị số bài hát phù hợp sau khi áp dụng tất cả 
 Pagination giữ nguyên:
 
 - Rows per page.
-- Previous / Next.
+- First page, Previous, Next và Last page.
 - Trang hiện tại và các trang lân cận.
+- Nút First page bị disable tại trang đầu; nút Last page bị disable tại trang cuối.
 - Khi thay đổi Search, Tags Filter hoặc Rows per page, trở về trang đầu.
 - Trên màn hình hẹp, Footer có thể xuống hai hàng.
 
 ## 9. Quy tắc kết hợp bộ lọc
 
-Bộ lọc gồm hai nhóm độc lập:
+Tất cả điều kiện được kiểm tra trên tags của bài hát. `Exclude` luôn được áp dụng và loại bài hát nếu có ít nhất một tag chứa bất kỳ từ Exclude nào.
 
-Nhóm Selected Tags:
+Sau khi áp dụng Exclude:
 
-\\[ F = (\text{Include OR}) \land (\text{Require AND}) \land \neg(\text{Exclude OR}) \\]
+- Nếu có một hoặc nhiều từ `Require`, bài hát phải có tag khớp với tất cả từ Require. Các từ Include bị bỏ qua.
+- Nếu không có từ Require nhưng có một hoặc nhiều từ `Include`, bài hát phải có tag khớp với ít nhất một từ Include.
+- Nếu không có cả Require và Include, hai nhóm này không giới hạn kết quả.
 
-Nhóm Search:
-
-\\[ S = \text{SearchWord}\_1 \lor \text{SearchWord}\_2 \lor \cdots \\]
-
-Kết quả cuối cùng:
-
-\\[ \boxed{\text{Result} = F \land S} \\]
-
-Nhóm điều kiện rỗng được xem là không hạn chế kết quả.
+| Điều kiện đang chọn | Quy tắc áp dụng |
+| --- | --- |
+| Có Exclude | Luôn loại bài hát nếu có bất kỳ tag nào thuộc Exclude |
+| Có ít nhất một Require | Chỉ kiểm tra tất cả Require; bỏ qua Include |
+| Không có Require, có Include | Phải khớp ít nhất một Include |
+| Không có Require và Include | Không giới hạn theo hai nhóm này |
 
 Ví dụ:
 
 - Include: `relaxing`, `piano`
 - Require: `instrumental`
 - Exclude: `rock`
-- Search: `soft calm`
 
-Một bài hát phù hợp khi:
-
-1. Chứa `relaxing` hoặc `piano`.
-2. Bắt buộc chứa `instrumental`.
-3. Không chứa `rock`.
-4. Đồng thời có ít nhất một tên tag chứa `soft` hoặc `calm`.
+Kết quả cần thỏa `instrumental` và không được chứa `rock`; `relaxing`/`piano` bị bỏ qua vì có Require. Nếu bỏ Require, bài hát chỉ cần khớp `relaxing` hoặc `piano`, đồng thời vẫn không chứa `rock`.
 
 ## 10. Thiết kế Light Mode và Dark Mode
 
@@ -343,11 +337,12 @@ Ví dụ Dark:
 - Tags Panel đóng bằng vuốt, nút Close hoặc overlay.
 - Selected Tags Bar cuộn ngang, không xuống dòng.
 - Tag chuyển đúng ba trạng thái Include, Require, Exclude.
-- Search tách từng từ, so khớp contains, không phân biệt hoa/thường.
-- Search chỉ tìm trong tên Tags và kết hợp các từ bằng OR.
-- Selected Tags và Search kết hợp bằng AND.
+- Search tách từng từ, so khớp contains, không phân biệt hoa/thường và chỉ tìm trong tên Tags.
+- Khi có Require, phải khớp tất cả Require và bỏ qua Include.
+- Khi không có Require nhưng có Include, phải khớp ít nhất một Include.
+- Exclude luôn loại bài có tag khớp.
 - Song Count phản ánh đúng kết quả lọc.
-- Pagination hoạt động đúng.
+- Pagination có Rows per page, First/Previous/Next/Last và trạng thái disable chính xác ở hai đầu.
 - Light/Dark có hai file CSS riêng, không lặp lại layout.
 - Giao diện không có cuộn ngang toàn trang.
 - Giữ nguyên logic mở và phát bài hát hiện có.

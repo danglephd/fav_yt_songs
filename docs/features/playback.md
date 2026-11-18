@@ -7,7 +7,7 @@ Nguồn chính: [video-player-dialog.component.ts](../../src/app/video-player-di
 ## Phát danh sách
 
 - Player dùng YouTube IFrame API và nhận danh sách bài đã lọc cùng vị trí bắt đầu.
-- Playlist bị giới hạn bởi `maxPlaylistSize`; giá trị đọc từ localStorage. Nếu chưa lưu, player khởi tạo và lưu giá trị 30.
+- Playlist bị giới hạn bởi `maxPlaylistSize`; giá trị tùy chỉnh được đọc từ localStorage. Nếu chưa lưu, mặc định thống nhất là 30.
 - Khi shuffle tắt, danh sách được xoay để bài đang chọn đứng đầu, các bài trước đó chuyển xuống cuối; player bắt đầu ở index 0.
 - Khi shuffle bật, bài đang chọn được giữ đầu danh sách và các bài còn lại được xáo trộn.
 - Tự phát bài tiếp theo được bật khi màn hình mở player. Loop được áp dụng qua YouTube player.
@@ -25,7 +25,7 @@ Với YouTube error code 100, 101 hoặc 150, player phát âm báo lỗi, xóa 
 
 ## Cài đặt
 
-Dialog Settings lưu `shuffleEnabled`, `loopEnabled` và `maxPlaylistSize` vào localStorage. Giá trị mặc định trong dialog là shuffle off, loop off và playlist size 50. Tuy nhiên, nếu player mở trước khi size được lưu, player đặt mặc định 30. Giá trị mặc định mong muốn cần được xác nhận tại [Q-004](../management/QUESTIONS.md).
+Dialog Settings lưu `shuffleEnabled`, `loopEnabled` và `maxPlaylistSize` vào localStorage. Giá trị mặc định là shuffle off, loop off và playlist size 30. Reset khôi phục cùng các mặc định này. Giá trị `maxPlaylistSize` đã được người dùng lưu vẫn được giữ nguyên.
 
 ## Âm thanh trạng thái
 

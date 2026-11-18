@@ -13,7 +13,7 @@ Fav YouTube Songs là ứng dụng Angular để duy trì một thư viện vide
 - **Implemented:** `/` mở `MySongs2Component`.
 - **Implemented:** `/my-songs-2` mở `MySongsComponent` cũ.
 - **Implemented:** wildcard route chuyển về `/`.
-- **Unknown / Unverified:** tài liệu thiết kế [Manual2.md](../Manual2.md) chỉ định mở màn hình mới tại `/my-songs-2`, khác với route đang được khai báo. Câu hỏi cần xác nhận được ghi tại [QUESTIONS.md](management/QUESTIONS.md).
+- **Resolved:** route chính `/` đã được người dùng xác nhận cho `MySongs2Component`; [Manual2.md](../Manual2.md) được cập nhật theo quyết định này. Chi tiết tại [D-004](management/DECISIONS.md).
 
 Nguồn xác minh: [app.module.ts](../src/app/app.module.ts), [my-songs-2.component.ts](../src/app/my-songs-2/my-songs-2.component.ts).
 

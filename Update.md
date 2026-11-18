@@ -1,25 +1,11 @@
-Yêu cầu là:
-- Có dữ liệu hợp lệ trong localStorage: chỉ sử dụng local, không truy cập Realtime Database.
-- Không có dữ liệu local: mới kết nối Realtime Database để lấy snapshot ban đầu.
-- Sau khi lấy snapshot: lưu vào localStorage, không tiếp tục realtime synchronization.
+./deploy.sh 
+Using Node v22.23.2
+yarn run v1.22.22
+$ ng build --configuration production
+✔ Browser application bundle generation complete.
+✔ Copying assets complete.
+✖ Index html generation failed.
+Inlining of fonts failed. An error has occurred while retrieving https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap over the internet.
 
-Nên triển khai theo nguyên tắc Lazy initialization:
-
-Application starts
-       |
-       v
-Check localStorage
-       |
-       +---- Cache exists ----> Use local data
-       |                       No Firebase DB subscription
-       |
-       +---- Cache missing ---> Connect to Realtime Database
-                                      |
-                                      v
-                                 Get snapshot
-                                      |
-                                      v
-                                 Save to localStorage
-                                      |
-                                      v
-                                 Unsubscribe
+error Command failed with exit code 1.
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

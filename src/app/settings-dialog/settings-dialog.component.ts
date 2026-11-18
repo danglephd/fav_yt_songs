@@ -9,7 +9,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 export class SettingsDialogComponent implements OnInit {
   shuffleEnabled: boolean = false;
   loopEnabled: boolean = false;
-  maxPlaylistSize: number = 50;
+  maxPlaylistSize: number = 30;
 
   constructor(public dialogRef: MatDialogRef<SettingsDialogComponent>) { }
 
@@ -28,7 +28,7 @@ export class SettingsDialogComponent implements OnInit {
 
     this.shuffleEnabled = shuffleSetting === 'true';
     this.loopEnabled = loopSetting === 'true';
-    this.maxPlaylistSize = maxPlaylistSizeSetting ? parseInt(maxPlaylistSizeSetting, 10) : 50;
+    this.maxPlaylistSize = maxPlaylistSizeSetting ? parseInt(maxPlaylistSizeSetting, 10) : 30;
   }
 
   /**
@@ -52,7 +52,7 @@ export class SettingsDialogComponent implements OnInit {
   resetSettings(): void {
     this.shuffleEnabled = false;
     this.loopEnabled = false;
-    this.maxPlaylistSize = 50;
+    this.maxPlaylistSize = 30;
   }
 
   /**

@@ -517,6 +517,7 @@ export class MySongs2Component implements OnInit, AfterViewInit, OnDestroy {
   updatePageSongs(): void {
     const start = this.pageIndex * this.pageSize;
     this.pageSongs = this.filteredSongs.slice(start, start + this.pageSize);
+    this.tableRegion?.nativeElement.scrollTo({ top: 0 });
     this.scheduleTagLayout();
   }
 

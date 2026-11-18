@@ -5,20 +5,20 @@ Các câu hỏi dưới đây giữ lại những điểm ảnh hưởng đến 
 ## Q-001: Route chính của giao diện mới
 
 - **Câu hỏi:** Giao diện `MySongs2Component` nên được mở tại `/` hay `/my-songs-2`?
-- **Lý do:** `Manual2.md` yêu cầu mở giao diện mới tại `/my-songs-2`; `app.module.ts` hiện ánh xạ `/` tới `MySongs2Component` và `/my-songs-2` tới `MySongsComponent` cũ.
+- **Lý do:** Đặc tả cũ trong `Manual2.md` từng chỉ định `/my-songs-2`, khác với route hiện tại trong `app.module.ts`.
 - **Mức độ:** Cao.
 - **Liên quan:** Routing, README, AI setup guide, My Songs.
-- **Trạng thái:** Open.
-- **Trả lời / kết quả:** Chưa có xác nhận. Source hiện tại được mô tả nguyên trạng; không đổi route trong nhiệm vụ tài liệu này.
+- **Trạng thái:** Resolved.
+- **Trả lời / kết quả:** `MySongs2Component` là màn hình chính tại `/`. `/my-songs-2` tiếp tục trỏ tới `MySongsComponent` cũ. Quyết định này chỉ cập nhật tài liệu; không thay đổi code.
 
 ## Q-002: Kết hợp Include và Require
 
-- **Câu hỏi:** Khi đồng thời có filter `include` và `require`, có phải kết quả cần thỏa `(ít nhất một include) AND (tất cả require)` ngoài điều kiện exclude?
-- **Lý do:** `Manual2.md` mô tả phép kết hợp này. `MySongs2Component.applyFilters()` trả về theo `requires.every(...)` ngay khi có require, nên các include không giới hạn kết quả trong nhánh đó.
+- **Câu hỏi:** Khi đồng thời có filter `include` và `require`, nhóm nào quyết định điều kiện khớp?
+- **Lý do:** Đặc tả cũ mô tả Include và Require cùng áp dụng, trong khi người dùng xác nhận Require phải thay thế Include khi có mặt.
 - **Mức độ:** Cao.
 - **Liên quan:** Business rules, tìm kiếm/lọc tags, [song-library.md](../features/song-library.md).
-- **Trạng thái:** Open.
-- **Trả lời / kết quả:** Chưa có xác nhận. Tài liệu ghi actual behavior, chưa sửa logic lọc.
+- **Trạng thái:** Resolved.
+- **Trả lời / kết quả:** Nếu có ít nhất một `require`, chỉ cần thỏa mãn tất cả `require` và bỏ qua `include`. Nếu không có `require` nhưng có `include`, phải thỏa ít nhất một `include`. `exclude` luôn loại bài hát nếu có bất kỳ tag nào khớp. Không có `include` và `require` thì hai nhóm này không giới hạn kết quả. Code không được cập nhật theo quyết định này trong nhiệm vụ hiện tại.
 
 ## Q-003: Nguồn dữ liệu chuẩn và đồng bộ Firebase
 
@@ -32,8 +32,17 @@ Các câu hỏi dưới đây giữ lại những điểm ảnh hưởng đến 
 ## Q-004: Giá trị mặc định của kích thước playlist
 
 - **Câu hỏi:** Giá trị mặc định mong muốn của `maxPlaylistSize` là 30 hay 50?
-- **Lý do:** Settings dialog khởi tạo 50; player đặt và lưu 30 nếu mở khi chưa có giá trị trong localStorage.
+- **Lý do:** Settings dialog và player trước đây có giá trị mặc định khác nhau.
 - **Mức độ:** Trung bình.
 - **Liên quan:** Settings, playback playlist.
+- **Trạng thái:** Resolved.
+- **Trả lời / kết quả:** Dùng 30 làm mặc định thống nhất cho Settings initialization, fallback khi chưa có giá trị lưu, Reset và player. Giá trị tùy chỉnh đã lưu của người dùng tiếp tục được giữ nguyên.
+
+## Q-005: Warning budget của stylesheet My Songs 2
+
+- **Câu hỏi:** Có nên tối ưu `my-songs-2.component.css` xuống dưới warning budget 10 kB, hay tăng warning budget để phù hợp với kích thước hiện tại?
+- **Lý do:** Production build báo stylesheet khoảng 18.21 kB, vượt warning budget 10 kB nhưng vẫn dưới error budget 20 kB; build và deploy vẫn có thể hoàn tất.
+- **Mức độ:** Trung bình.
+- **Liên quan:** CSS My Songs 2, production build, [angular.json](../../angular.json).
 - **Trạng thái:** Open.
-- **Trả lời / kết quả:** Chưa có xác nhận. Tài liệu nêu rõ hai giá trị hiện tại; chưa đổi mặc định.
+- **Trả lời / kết quả:** Chưa có quyết định. Chưa tối ưu stylesheet hoặc thay đổi warning/error budget.

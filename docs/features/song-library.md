@@ -33,11 +33,12 @@ Sau khi cập nhật count, thứ tự danh sách không đổi ngay. Sắp xế
 - Query hỗ trợ token không trích dẫn và cụm từ trong dấu ngoặc kép; các token trùng sau chuẩn hóa chỉ giữ một.
 - Mỗi token mặc định có trạng thái `include`. Nhấn badge chuyển lần lượt `include → require → exclude → include`; nút đóng riêng bỏ token khỏi query.
 - `exclude` loại bài có bất kỳ tag nào chứa token đó.
-- Khi không có `require`, các token `include` được kết hợp OR.
-- Khi có ít nhất một `require`, implementation chỉ kiểm tra tất cả token `require` sau bước loại `exclude`; các token `include` không còn giới hạn kết quả.
-- Nếu không còn điều kiện `include`/`require` (ví dụ chỉ có `exclude`), mọi bài không bị loại được giữ lại.
+- Nếu có ít nhất một `require`, kết quả phải thỏa tất cả token `require`; token `include` bị bỏ qua.
+- Nếu không có `require` nhưng có `include`, kết quả phải thỏa ít nhất một token `include`.
+- `exclude` luôn có hiệu lực và loại bài nếu bất kỳ tag nào chứa token exclude.
+- Nếu không có `include` và `require`, hai nhóm này không giới hạn kết quả; `exclude` vẫn được áp dụng nếu có.
 
-Đặc tả [Manual2.md](../../Manual2.md) nói `include OR` phải đồng thời thỏa `require AND`; điều này khác nhánh xử lý hiện tại. Chưa tự đổi business rule; xem [Q-002](../management/QUESTIONS.md).
+Đây là quy tắc intended behavior đã được xác nhận trong [D-003](../management/DECISIONS.md). Implementation hiện tại tại `MySongs2Component.applyFilters()` loại các bài khớp `exclude` trước, sau đó nếu có `require` thì yêu cầu tất cả `require` và bỏ qua `include`; nếu không có `require` thì áp dụng `include` theo OR. Vì vậy code hiện tại đã khớp quyết định này; không có thay đổi code trong lần cập nhật tài liệu.
 
 ## Tags panel
 
@@ -57,6 +58,7 @@ Sau khi cập nhật count, thứ tự danh sách không đổi ngay. Sắp xế
 - Bài có `unavailable` không mở player; nhấn hàng sẽ mở YouTube link bên ngoài nếu có.
 - Nhấn hàng hoặc nút play mở player. Với bài được nhận diện là playlist và có tiến độ lưu hợp lệ, playback tiếp tục từ tiến độ đó; nút replay mở từ đầu.
 - Trang mặc định có 20 hàng; lựa chọn 10, 20 hoặc 50. Filter và đổi page size đưa về trang đầu.
+- Pagination có nút về trang đầu, trang trước, các số trang gần hiện tại, trang sau và trang cuối; nút đầu/cuối bị disable khi đã ở biên tương ứng.
 - Bộ đếm hiển thị tổng số bài sau lọc; footer hiển thị khoảng hàng và điều khiển trang.
 
 ## Xóa bài
